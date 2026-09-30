@@ -1,0 +1,65 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+.ipynb_checkpoints/
+
+# --- Virtual environments ---
+.venv/
+venv/
+env/
+
+# --- Secrets ---
+.env
+.env.*
+!.env.example
+
+# --- Data (never commit datasets) ---
+data/raw/
+data/processed/
+data/cache/
+
+# --- Model weights (live on the Hugging Face Hub, not in Git) ---
+models/
+*.safetensors
+*.gguf
+*.bin
+*.pt
+*.pth
+*.onnx
+*.faiss
+
+# --- Experiment tracking ---
+wandb/
+mlruns/
+mlartifacts/
+
+# --- Docker / sandbox scratch ---
+.sandbox/
+scratch/
+*.tar
+logs/run_evaluation/
+
+# --- Agent run artefacts (large trajectories stay local; summaries go in results/) ---
+runs/
+
+# --- Report build intermediates (final DOCX/PDF in report/build/ ARE committed) ---
+report/build/*.tmp
+~$*.docx
+
+# --- Editors / OS ---
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
