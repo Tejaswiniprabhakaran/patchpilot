@@ -30,3 +30,17 @@ To be revisited before v1.0.0.
 
 **Why:** they need benchmark images and a Docker daemon with real resource limits; the unit tests
 mock Docker so CI stays fast and deterministic.
+
+## D5 — SWE-bench images are pulled one at a time and removed after use (2026-09-30)
+
+**Measured:** the official image `swebench/sweb.eval.x86_64.pallets_1776_flask-4992` is 4.23 GB
+as reported by `docker image ls`, and free space on C: fell from 25.6 GB to 21.2 GB after pulling
+it. The development machine cannot hold 50 such images at once.
+
+**Decision:** the SWE-bench runner will pull an instance image, run every pending configuration
+for that instance, then remove the image (`prune_images: true` in the experiment config, on by
+default on this machine). Docker Desktop is limited to 8.1 GB RAM, so SWE-bench containers run one
+at a time with a 4 GB memory cap.
+
+**Rejected:** pre-pulling the whole subset (does not fit); building images locally with the
+harness (slower and uses more disk than pulling the published ones).
