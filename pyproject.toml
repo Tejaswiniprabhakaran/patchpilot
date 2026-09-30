@@ -1,0 +1,66 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "patchpilot"
+version = "0.0.1"
+description = "An AI agent that fixes real bugs: trained fault localization + fine-tuned Gemma patch generation, verified in a Docker sandbox."
+readme = "README.md"
+requires-python = ">=3.11,<3.13"
+authors = [{ name = "Tejaswini Prabhakaran" }]
+dependencies = [
+    "typer>=0.12",
+    "rich>=13.7",
+    "pydantic>=2.7",
+    "pyyaml>=6.0",
+    "docker>=7.1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.2",
+    "pytest-cov>=5.0",
+    "ruff>=0.6",
+    "mypy>=1.11",
+    "pre-commit>=3.7",
+    "types-PyYAML>=6.0",
+]
+
+[project.scripts]
+patchpilot = "patchpilot.cli:app"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/patchpilot"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "N", "RUF"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+files = ["src/patchpilot"]
+warn_unused_ignores = true
+
+[[tool.mypy.overrides]]
+module = ["docker.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
+markers = [
+    "integration: needs a running Docker daemon (deselect with -m 'not integration')",
+]
+
+[tool.coverage.run]
+source = ["patchpilot"]
+branch = true
+
+[tool.coverage.report]
+show_missing = true
