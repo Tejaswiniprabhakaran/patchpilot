@@ -38,6 +38,10 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--benchmark", required=True, choices=["quixbugs", "swebench-lite"])
     parser.add_argument("--output", type=Path, default=OUTPUT)
+    parser.add_argument("--instance", action="append", help="only check these instance ids")
+    parser.add_argument(
+        "--prune", action="store_true", help="remove each SWE-bench image after use (D5)"
+    )
     args = parser.parse_args()
 
     done: set[tuple[str, str]] = set()
@@ -48,6 +52,8 @@ def main() -> None:
     args.output.parent.mkdir(parents=True, exist_ok=True)
 
     instances = load(args.benchmark)
+    if args.instance:
+        instances = [i for i in instances if i.instance_id in set(args.instance)]
     valid = 0
     with args.output.open("a", encoding="utf-8", newline="\n") as out:
         for instance in instances:
@@ -56,7 +62,7 @@ def main() -> None:
             if instance.benchmark == "swebench-lite":
                 from patchpilot.benchmarks import swebench
 
-                with swebench.pulled_image(instance.image):
+                with swebench.pulled_image(instance.image, prune=args.prune):
                     record = check_instance(instance)
             else:
                 record = check_instance(instance)
