@@ -63,3 +63,6 @@ report/build/*.tmp
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# --- Local run logs ---
+logs/

@@ -18,6 +18,10 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+bench = [
+    "swebench==4.1.0",
+    "datasets>=2.20",
+]
 dev = [
     "pytest>=8.2",
     "pytest-cov>=5.0",
@@ -48,7 +52,7 @@ files = ["src/patchpilot"]
 warn_unused_ignores = true
 
 [[tool.mypy.overrides]]
-module = ["docker.*"]
+module = ["docker.*", "datasets.*", "swebench.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
