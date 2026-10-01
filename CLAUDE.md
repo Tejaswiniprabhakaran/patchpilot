@@ -39,7 +39,13 @@ evaluated on SWE-bench Lite (50-instance seeded subset) and QuixBugs.
 - Python 3.11 venv at `.venv` (pip + venv; `uv` is not installed — see decisions.md).
 - Run tools as `.venv\Scripts\python.exe -m ruff|mypy|pytest`.
 - Docker Desktop (Linux containers). Ollama installed for local inference.
-- No GPU for training: notebooks in `notebooks/` run on Kaggle/Colab by the user (checkpoint).
+- No NVIDIA GPU (Intel Iris Xe, i5-1335U, 15.6 GB RAM). Training notebooks in `notebooks/` run on
+  Kaggle/Colab by the owner (checkpoint).
+- **Experiments are CPU-scale (decisions D12):** Gemma 4 E4B (base, later QLoRA-fine-tuned and
+  served as GGUF) in local Ollama; evaluation set = QuixBugs (40) + 10 SWE-bench Lite instances
+  (`configs/swebench_lite_subset_10.json`). Gemma 4 thinking is off (D10).
+- Docker Desktop's disk lives on `D:\DockerData`; SWE-bench images are kept, not pruned.
+- Commit gate: ruff check, ruff format, mypy, then **plain `pytest`** (as CI runs it).
 
 ## Commands
 
