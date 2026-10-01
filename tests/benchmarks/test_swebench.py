@@ -98,6 +98,30 @@ def test_pulled_image_removes_only_images_it_pulled() -> None:
     client.images.remove.assert_called_once_with("img", force=True)
 
 
+def test_pull_is_retried_when_the_download_breaks_off(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(swebench, "PULL_RETRY_DELAY_S", 0)
+    client = MagicMock()
+    missing = docker.errors.ImageNotFound("missing")
+    # present? no -> pull, still missing -> pull again, now present
+    client.images.get.side_effect = [missing, missing, None]
+
+    with swebench.pulled_image("img", client=client):
+        pass
+
+    assert client.images.pull.call_count == 2
+
+
+def test_pull_gives_up_after_the_last_attempt(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(swebench, "PULL_RETRY_DELAY_S", 0)
+    client = MagicMock()
+    client.images.get.side_effect = docker.errors.ImageNotFound("missing")
+
+    with pytest.raises(docker.errors.ImageNotFound), swebench.pulled_image("img", client=client):
+        pass
+
+    assert client.images.pull.call_count == swebench.PULL_ATTEMPTS
+
+
 def test_pulled_image_keeps_images_that_were_already_present() -> None:
     client = MagicMock()
 

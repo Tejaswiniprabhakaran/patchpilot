@@ -16,6 +16,7 @@ import contextlib
 import json
 import random
 import sys
+import time
 import types
 from collections.abc import Iterator
 from functools import cache
@@ -37,6 +38,8 @@ SUBSET_SEED = 42
 SUBSET_SIZE = 50
 EVAL_SCRIPT_PATH = "/eval.sh"
 SHELL_PREFIX = "source /opt/miniconda3/bin/activate testbed"
+PULL_ATTEMPTS = 3
+PULL_RETRY_DELAY_S = 10
 
 _STATUS = {
     "PASSED": TestStatus.PASSED,
@@ -166,6 +169,25 @@ def parser_for(instance_id: str) -> TestParser:
     return parse
 
 
+def _pull_with_retries(client: Any, image: str, attempts: int = PULL_ATTEMPTS) -> None:
+    """Pull an image, retrying when the download breaks off.
+
+    docker-py does not raise when the pull stream ends early (e.g. a network blip); the image is
+    then simply missing, and the follow-up lookup raises ``ImageNotFound``.
+    """
+    import docker
+
+    for attempt in range(1, attempts + 1):
+        try:
+            client.images.pull(image)
+            client.images.get(image)
+            return
+        except (docker.errors.ImageNotFound, docker.errors.APIError):
+            if attempt == attempts:
+                raise
+            time.sleep(PULL_RETRY_DELAY_S * attempt)
+
+
 @contextlib.contextmanager
 def pulled_image(image: str, prune: bool = True, client: Any = None) -> Iterator[str]:
     """Make sure ``image`` is present; remove it afterwards if we pulled it (decisions.md D5)."""
@@ -176,7 +198,7 @@ def pulled_image(image: str, prune: bool = True, client: Any = None) -> Iterator
     try:
         client.images.get(image)
     except docker.errors.ImageNotFound:
-        client.images.pull(image)
+        _pull_with_retries(client, image)
         pulled = True
     try:
         yield image
