@@ -79,6 +79,29 @@ NVIDIA GPU (Intel Iris Xe, i5-1335U, 15.6 GB RAM), so a small model is needed fo
 **Open:** where the 12B model runs during experiments is decided after measuring local CPU speed
 (`results/llm_speed_cpu.jsonl`).
 
+## D8 — The agent sees the failing test (test-guided repair) (2026-10-01)
+
+**Decision:** at the start of a run the instance's test patch is applied, so the agent can read and
+run the failing test, and the retry loop uses its output as feedback.
+
+**Why:** the brief describes an agent that "reads a failing test" and a GitHub bot that reacts
+when tests fail on a pull request; in both, the failing test exists. Grading still uses the
+official eval script (which resets test files before applying the test patch), and the agent may
+not edit test files, so a fix cannot come from changing the test.
+
+**Consequence:** SWE-bench numbers from this project are **not comparable** to the public
+leaderboard, where the tests are hidden. This is stated next to every SWE-bench result.
+
+## D9 — Experiment trajectories are committed, gzipped (2026-10-01)
+
+**Decision:** `patchpilot eval` writes every trajectory to
+`results/<experiment>/trajectories/<run_id>.json.gz`; ad-hoc `patchpilot fix` runs go to the
+ignored `runs/` folder.
+
+**Why:** the failure analysis (A5), the dashboard and the report's case studies all need the full
+trajectories, and the "every number traceable to results/" rule means they must be in the repo.
+Long step outputs are clipped at 20,000 characters and gzip keeps each run small.
+
 ## D11 — Instances whose gold patch fails in the network-off sandbox are excluded from scoring (2026-10-01)
 
 **Measured** (`results/sanity_gold_patches.jsonl`, summary in `results/sanity_summary.csv`):
