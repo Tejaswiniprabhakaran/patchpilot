@@ -116,6 +116,8 @@ def run_experiment(
     (out_dir / "config.yaml").write_text(
         yaml.safe_dump(config.model_dump(mode="json"), sort_keys=False), encoding="utf-8"
     )
+    # Recorded once: the code that is running, even if new commits land while the run continues.
+    commit = git_commit()
     rows: list[dict[str, Any]] = []
     for selection in config.benchmarks:
         if only_benchmark and selection.name != only_benchmark:
@@ -128,7 +130,7 @@ def run_experiment(
             agent = agent_factory(config)
             trajectory = _run_one(agent, instance, config)
             save_trajectory(trajectory, out_dir / "trajectories")
-            row = summary_row(trajectory, config) | {"git_commit": git_commit()}
+            row = summary_row(trajectory, config) | {"git_commit": commit}
             with results_file.open("a", encoding="utf-8", newline="\n") as handle:
                 handle.write(json.dumps(row) + "\n")
             rows.append(row)
