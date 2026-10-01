@@ -134,7 +134,7 @@ def write_subset_file(path: Path = SUBSET_FILE) -> list[str]:
         "method": "random.Random(seed).sample(sorted(all_instance_ids), size), then sorted",
         "instance_ids": ids,
     }
-    path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+    path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8", newline="\n")
     return ids
 
 
