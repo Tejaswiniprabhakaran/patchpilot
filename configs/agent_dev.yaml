@@ -1,0 +1,19 @@
+# Development settings: base Gemma 4 E4B on the laptop through Ollama (decisions.md D7).
+# Not used for any reported result.
+id: dev
+description: Local development run with base Gemma 4 E4B
+localizer: llm_search
+llm:
+  base_url: http://localhost:11434/v1
+  model: gemma4:e4b
+  temperature: 0.0
+  seed: 42
+  max_tokens: 2048
+  context_tokens: 16384
+agent:
+  max_attempts: 3
+  top_k_files: 3
+benchmarks:
+  - name: quixbugs
+    instances: all
+results_dir: runs/dev-results

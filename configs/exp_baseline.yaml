@@ -1,0 +1,22 @@
+# B0 — baseline: base Gemma 4 12B, LLM search localization, no retrieval, retries on.
+# Answers RQ1 and is the reference for RQ2-RQ4. The base_url points at wherever the 12B model is
+# served (decided after the CPU speed measurement, see decisions.md D7).
+id: B0
+description: Base Gemma 4 12B, LLM-search localization, no retrieval, 3 attempts
+localizer: llm_search
+llm:
+  base_url: http://localhost:11434/v1
+  model: gemma4:12b
+  temperature: 0.0
+  seed: 42
+  max_tokens: 2048
+  context_tokens: 16384
+agent:
+  max_attempts: 3
+  top_k_files: 3
+benchmarks:
+  - name: quixbugs
+    instances: all
+  - name: swebench-lite
+    instances: subset50
+seed: 42
