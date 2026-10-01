@@ -61,3 +61,20 @@ official parsers; only the container runner is ours (the same sandbox the agent 
 
 **Rejected:** running the whole harness inside WSL (a second Python environment just for grading);
 re-implementing the eval scripts and parsers (would no longer be the official harness).
+
+## D7 — Gemma 4 12B for experiments, base Gemma 4 E4B for development and the demo (2026-10-01)
+
+**Decision (owner's choice):** Gemma 4 12B (instruction-tuned) is the main model for every reported
+experiment (B0–E5), including the QLoRA fine-tune on Kaggle. Gemma 4 E4B, base and not fine-tuned,
+is used only for daily development, laptop testing and the dashboard's live "Try it" page. E4B is
+fine-tuned only if time is left at the end.
+
+**Guard:** if 12B QLoRA does not fit in T4 memory even with short sequences and a small LoRA rank,
+the measured peak-memory numbers are reported to the owner before the main model is changed.
+
+**Why:** Gemma 4 is the newest Gemma generation (released 2026-04-02, Apache-2.0); 12B is the
+largest dense size that fits ~16 GB at 4-bit, as the brief requires. The development laptop has no
+NVIDIA GPU (Intel Iris Xe, i5-1335U, 15.6 GB RAM), so a small model is needed for local work.
+
+**Open:** where the 12B model runs during experiments is decided after measuring local CPU speed
+(`results/llm_speed_cpu.jsonl`).
