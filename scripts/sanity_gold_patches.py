@@ -59,17 +59,27 @@ def main() -> None:
         for instance in instances:
             if (instance.benchmark, instance.instance_id) in done:
                 continue
-            if instance.benchmark == "swebench-lite":
-                from patchpilot.benchmarks import swebench
+            try:
+                if instance.benchmark == "swebench-lite":
+                    from patchpilot.benchmarks import swebench
 
-                with swebench.pulled_image(instance.image, prune=args.prune):
+                    with swebench.pulled_image(instance.image, prune=args.prune):
+                        record = check_instance(instance)
+                else:
                     record = check_instance(instance)
-            else:
-                record = check_instance(instance)
+            except Exception as exc:  # one broken instance must not stop the whole run
+                record = {
+                    "benchmark": instance.benchmark,
+                    "instance_id": instance.instance_id,
+                    "image": instance.image,
+                    "valid": False,
+                    "error": f"{type(exc).__name__}: {exc}",
+                }
             out.write(json.dumps(record) + "\n")
             out.flush()
             valid += record["valid"]
-            print(f"{'ok  ' if record['valid'] else 'FAIL'} {instance.instance_id}")
+            status = "ok  " if record["valid"] else "FAIL"
+            print(f"{status} {instance.instance_id} {record.get('error', '')}", flush=True)
     print(f"{valid} valid out of {len(instances) - len(done)} newly checked")
 
 
