@@ -1,12 +1,12 @@
-# B0 — baseline: base Gemma 4 12B, LLM search localization, no retrieval, retries on.
-# Answers RQ1 and is the reference for RQ2-RQ4. The base_url points at wherever the 12B model is
-# served (decided after the CPU speed measurement, see decisions.md D7).
+# B0 — baseline: base Gemma 4 E4B, LLM-search localization, no retrieval, retries on (3 attempts).
+# Answers RQ1 and is the reference for RQ2-RQ4. CPU scale: the model runs locally in Ollama and the
+# evaluation set is QuixBugs (40) + a seeded 10-instance SWE-bench Lite subset (decisions D12).
 id: B0
-description: Base Gemma 4 12B, LLM-search localization, no retrieval, 3 attempts
+description: Base Gemma 4 E4B, LLM-search localization, no retrieval, 3 attempts
 localizer: llm_search
 llm:
   base_url: http://localhost:11434/v1
-  model: gemma4:12b
+  model: gemma4:e4b
   temperature: 0.0
   seed: 42
   max_tokens: 2048
@@ -19,5 +19,5 @@ benchmarks:
   - name: quixbugs
     instances: all
   - name: swebench-lite
-    instances: subset50
+    instances: subset10
 seed: 42

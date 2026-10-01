@@ -36,6 +36,8 @@ IMAGE_NAMESPACE = "swebench"
 SUBSET_FILE = Path("configs/swebench_lite_subset_50.json")
 SUBSET_SEED = 42
 SUBSET_SIZE = 50
+SMALL_SUBSET_FILE = Path("configs/swebench_lite_subset_10.json")
+SMALL_SUBSET_SIZE = 10
 EVAL_SCRIPT_PATH = "/eval.sh"
 SHELL_PREFIX = "source /opt/miniconda3/bin/activate testbed"
 PULL_ATTEMPTS = 3
@@ -149,6 +151,42 @@ def write_subset_file(path: Path = SUBSET_FILE) -> list[str]:
         "seed": SUBSET_SEED,
         "size": SUBSET_SIZE,
         "method": "random.Random(seed).sample(sorted(all_instance_ids), size), then sorted",
+        "instance_ids": ids,
+    }
+    path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8", newline="\n")
+    return ids
+
+
+def write_small_subset_file(
+    sanity_file: Path = Path("results/sanity_gold_patches.jsonl"),
+    source: Path = SUBSET_FILE,
+    path: Path = SMALL_SUBSET_FILE,
+    size: int = SMALL_SUBSET_SIZE,
+) -> list[str]:
+    """The CPU-scale evaluation set (decisions D12).
+
+    A seeded sample of ``size`` instances from the 50-instance subset, drawn only from instances
+    that passed the gold-patch sanity check in our sandbox.
+    """
+    valid = {
+        record["instance_id"]
+        for record in map(json.loads, sanity_file.read_text(encoding="utf-8").splitlines())
+        if record["benchmark"] == NAME and record["valid"]
+    }
+    pool = [i for i in subset_ids(source) if i in valid]
+    ids = make_subset(pool, size=size)
+    payload = {
+        "dataset": DATASET,
+        "revision": DATASET_REVISION,
+        "split": SPLIT,
+        "seed": SUBSET_SEED,
+        "size": size,
+        "source": str(source).replace("\\", "/"),
+        "pool_size": len(pool),
+        "method": (
+            "random.Random(seed).sample(sorted(valid ids of the 50-instance subset), size), "
+            "then sorted; valid = passed the gold-patch sanity check"
+        ),
         "instance_ids": ids,
     }
     path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8", newline="\n")

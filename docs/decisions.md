@@ -133,3 +133,30 @@ documented.
 **Rejected:** enabling the network for this instance (breaks the security rule for untrusted
 code); replacing it with another instance (would change a seeded, documented sample after seeing
 results of a check).
+
+## D12 — CPU-scale experiments: Gemma 4 E4B on the laptop, smaller evaluation set (2026-10-01)
+
+**Measured** (`results/llm_speed_cpu.jsonl`, Gemma 4 E4B, Ollama, laptop CPU, 256 output tokens):
+prompt processing 14.4 / 19.4 / 30.3 tokens/s and generation 5.3 / 0.5 / 0.8 tokens/s for
+prompts of 1,102 / 4,412 / 8,950 tokens; 127 / 712 / 621 s per call. (25 Docker containers of
+another project were running during the measurement.)
+
+**Decision (owner's choice, replaces the "12B for reported results" part of D7):**
+- Every reported experiment uses **base or fine-tuned Gemma 4 E4B** served locally by Ollama.
+- QLoRA fine-tuning still runs on a free Kaggle GPU (training needs a GPU) but targets E4B; the
+  adapter is merged, converted to GGUF and served locally.
+- Evaluation set: **QuixBugs (40)** + **10 SWE-bench Lite instances**
+  (`configs/swebench_lite_subset_10.json`: seed 42, sampled from the 49 instances of the 50-subset
+  that passed the gold-patch sanity check).
+- E4 (1 attempt) and E5 (1/2/3/5 attempts) are read from E3's 5-attempt trajectories instead of
+  separate runs. The agent stops at its first success and runs at temperature 0 with a fixed seed,
+  so "resolved within k attempts" of the 5-attempt run is what a k-attempt run would produce. This
+  assumption is checked by re-running a sample with `max_attempts: 1` and comparing.
+
+**Why:** at the measured speeds an agent call costs minutes; ~530 runs at 12B scale would take
+far longer than the project allows on this laptop. The owner preferred a fully local setup over
+renting or scheduling remote GPU time.
+
+**Consequences, stated in the report:** results are for a small (4-billion-effective-parameter)
+model; the SWE-bench sample is small, so per-config differences there will rarely be
+statistically significant and QuixBugs carries most of the statistical power.

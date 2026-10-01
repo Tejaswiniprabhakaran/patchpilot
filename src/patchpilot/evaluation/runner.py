@@ -42,6 +42,8 @@ def load_benchmark(selection: BenchmarkSelection) -> list[BenchmarkInstance]:
         return [swebench.load_instance(i) for i in selection.instances]
     if selection.instances == "subset50":
         return swebench.load_subset()
+    if selection.instances == "subset10":
+        return swebench.load_subset(swebench.SMALL_SUBSET_FILE)
     return swebench.load_instances()
 
 

@@ -16,8 +16,8 @@ BenchmarkName = Literal["quixbugs", "swebench-lite"]
 
 class BenchmarkSelection(BaseModel):
     name: BenchmarkName
-    # "all", "subset50" (SWE-bench Lite seeded subset), or an explicit list of instance ids.
-    instances: Literal["all", "subset50"] | list[str] = "all"
+    # "all", "subset50" / "subset10" (seeded SWE-bench Lite subsets), or explicit instance ids.
+    instances: Literal["all", "subset50", "subset10"] | list[str] = "all"
 
 
 class ExperimentConfig(BaseModel):
