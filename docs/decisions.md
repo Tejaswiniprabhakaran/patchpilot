@@ -44,3 +44,20 @@ at a time with a 4 GB memory cap.
 
 **Rejected:** pre-pulling the whole subset (does not fit); building images locally with the
 harness (slower and uses more disk than pulling the published ones).
+
+**Update 2026-10-01:** Docker Desktop's disk image was moved to `D:\DockerData` (331 GB free),
+so disk space no longer limits how many SWE-bench images can be cached. Pruning stays available
+(`prune=True` in `swebench.pulled_image`) but is no longer required.
+
+## D6 — Stub the `resource` module to import the SWE-bench harness on Windows (2026-10-01)
+
+**Problem:** `swebench` 4.1.0 imports the Unix-only `resource` module when the package is imported,
+so `import swebench` fails on Windows.
+
+**Decision:** `patchpilot.benchmarks.swebench._harness()` registers an empty `resource` module on
+Windows before importing. We only use `make_test_spec` (eval scripts, image names) and the
+per-repo log parsers, which never call `resource`. Grading still uses the official eval script and
+official parsers; only the container runner is ours (the same sandbox the agent uses).
+
+**Rejected:** running the whole harness inside WSL (a second Python environment just for grading);
+re-implementing the eval scripts and parsers (would no longer be the official harness).

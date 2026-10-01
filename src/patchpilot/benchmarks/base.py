@@ -4,9 +4,16 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
-from patchpilot.sandbox import DockerSandbox, SandboxLimits, TestRunResult, TestStatus
+from patchpilot.sandbox import (
+    DockerSandbox,
+    SandboxLimits,
+    TestRunResult,
+    TestStatus,
+    parse_pytest_summary,
+)
+from patchpilot.sandbox.docker_sandbox import TestParser
 
 
 class BenchmarkInstance(BaseModel):
@@ -32,6 +39,10 @@ class BenchmarkInstance(BaseModel):
     gold_patch: str
     # Applied before running tests (SWE-bench adds the tests that expose the bug this way).
     test_patch: str = ""
+    # Files written into the sandbox right before the tests run (e.g. SWE-bench's eval script).
+    setup_files: dict[str, str] = Field(default_factory=dict)
+    # How to read the test output: "pytest" (our -rA parser) or "swebench" (official parsers).
+    log_parser: str = "pytest"
     test_timeout_s: int = 300
     memory: str = "2g"
 
@@ -80,7 +91,21 @@ def is_resolved(instance: BenchmarkInstance, tests: TestRunResult) -> tuple[bool
 
 def run_instance_tests(instance: BenchmarkInstance, sandbox: DockerSandbox) -> TestRunResult:
     """Run the instance's target tests in an already-started sandbox."""
-    return sandbox.run_tests(instance.test_command, timeout_s=instance.test_timeout_s)
+    for path, content in instance.setup_files.items():
+        sandbox.write_file(path, content)
+    return sandbox.run_tests(
+        instance.test_command, timeout_s=instance.test_timeout_s, parser=log_parser_for(instance)
+    )
+
+
+def log_parser_for(instance: BenchmarkInstance) -> TestParser:
+    if instance.log_parser == "pytest":
+        return parse_pytest_summary
+    if instance.log_parser == "swebench":
+        from patchpilot.benchmarks import swebench
+
+        return swebench.parser_for(instance.instance_id)
+    raise ValueError(f"unknown log parser: {instance.log_parser}")
 
 
 def evaluate_patch(

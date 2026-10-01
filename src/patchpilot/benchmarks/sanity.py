@@ -9,7 +9,12 @@ from __future__ import annotations
 
 from typing import Any
 
-from patchpilot.benchmarks.base import BenchmarkInstance, evaluate_patch, is_resolved
+from patchpilot.benchmarks.base import (
+    BenchmarkInstance,
+    evaluate_patch,
+    is_resolved,
+    run_instance_tests,
+)
 from patchpilot.sandbox import DockerSandbox
 
 
@@ -25,7 +30,7 @@ def check_instance(
         box.reset()
         if instance.test_patch:
             box.apply_patch(instance.test_patch)
-        before = box.run_tests(instance.test_command, timeout_s=instance.test_timeout_s)
+        before = run_instance_tests(instance, box)
         after = evaluate_patch(instance, instance.gold_patch, sandbox=box)
     finally:
         if own_sandbox:
