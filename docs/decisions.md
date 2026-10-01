@@ -78,3 +78,20 @@ NVIDIA GPU (Intel Iris Xe, i5-1335U, 15.6 GB RAM), so a small model is needed fo
 
 **Open:** where the 12B model runs during experiments is decided after measuring local CPU speed
 (`results/llm_speed_cpu.jsonl`).
+
+## D11 — Instances whose gold patch fails in the network-off sandbox are excluded from scoring (2026-10-01)
+
+**Measured** (`results/sanity_gold_patches.jsonl`, summary in `results/sanity_summary.csv`):
+QuixBugs 40/40 valid; SWE-bench Lite subset 49/50 valid. The one invalid instance,
+`psf__requests-1963`, fails even with the developers' own fix because 50 of its tests (e.g.
+`test_HTTP_200_OK_GET`, `test_DIGEST_AUTH_RETURNS_COOKIE`) send real HTTP requests to an external
+test server, and the sandbox has no network by design.
+
+**Decision:** keep the network disabled (security rule) and score every experiment on the
+**49 valid** SWE-bench instances. The excluded instance and the reason are reported next to every
+SWE-bench result. The 50-instance subset file itself is unchanged, so the sampling stays as
+documented.
+
+**Rejected:** enabling the network for this instance (breaks the security rule for untrusted
+code); replacing it with another instance (would change a seeded, documented sample after seeing
+results of a check).

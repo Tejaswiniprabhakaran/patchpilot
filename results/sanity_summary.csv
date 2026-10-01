@@ -1,0 +1,3 @@
+benchmark,instances,buggy_fails,gold_resolved,valid,errors,median_gold_test_s,max_gold_test_s,invalid_ids
+quixbugs,40,40,40,40,0,0.71,3.17,
+swebench-lite,50,50,49,49,0,11.18,469.2,psf__requests-1963

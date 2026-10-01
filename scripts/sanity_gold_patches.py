@@ -54,7 +54,7 @@ def main() -> None:
     instances = load(args.benchmark)
     if args.instance:
         instances = [i for i in instances if i.instance_id in set(args.instance)]
-    valid = 0
+    valid = checked = 0
     with args.output.open("a", encoding="utf-8", newline="\n") as out:
         for instance in instances:
             if (instance.benchmark, instance.instance_id) in done:
@@ -78,9 +78,10 @@ def main() -> None:
             out.write(json.dumps(record) + "\n")
             out.flush()
             valid += record["valid"]
+            checked += 1
             status = "ok  " if record["valid"] else "FAIL"
             print(f"{status} {instance.instance_id} {record.get('error', '')}", flush=True)
-    print(f"{valid} valid out of {len(instances) - len(done)} newly checked")
+    print(f"{valid} valid out of {checked} newly checked")
 
 
 if __name__ == "__main__":
