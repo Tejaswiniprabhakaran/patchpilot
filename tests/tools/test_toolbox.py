@@ -213,3 +213,13 @@ def test_summary_reports_broken_previously_passing_tests() -> None:
     assert "Target tests passing: 1/1" in text
     assert "broken: t::old" in text
     assert "Tests are not passing yet." in text
+
+
+def test_missing_block_feedback_shows_the_closest_real_lines() -> None:
+    original = "def gcd(a, b):\n    if b == 0:\n        return a\n    return gcd(a % b, b)\n"
+
+    updated, problem = apply_search_replace(original, "return gcd(a%b , b)\n", "x\n")
+
+    assert updated is None
+    assert "    return gcd(a % b, b)" in problem
+    assert "without line numbers" in problem

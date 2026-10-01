@@ -179,13 +179,21 @@ class Agent:
             duration_s=completion.latency_s,
             prompt_tokens=completion.prompt_tokens,
             completion_tokens=completion.completion_tokens,
+            finish_reason=completion.finish_reason,
+            reasoning=completion.reasoning,
         )
 
         edits = parse_edits(completion.text)
         if not edits:
-            feedback = (
-                "No edit blocks were found in your answer. Use the exact SEARCH/REPLACE format."
-            )
+            if completion.finish_reason == "length":
+                feedback = (
+                    "Your answer was cut off by the length limit before any edit block. "
+                    "Keep the explanation short and give the edit blocks first."
+                )
+            else:
+                feedback = (
+                    "No edit blocks were found in your answer. Use the exact SEARCH/REPLACE format."
+                )
             trajectory.add("note", "no_edits", {"attempt": attempt}, feedback, ok=False)
             return Candidate(attempt, "", applied=False), (completion.text[-2000:], feedback)
 

@@ -7,6 +7,7 @@ an explanation, because a model's mistake is information it can recover from.
 
 from __future__ import annotations
 
+import difflib
 import posixpath
 from dataclasses import dataclass
 
@@ -201,7 +202,7 @@ def apply_search_replace(original: str, search: str, replace: str) -> tuple[str 
     ]
     if len(matches) != 1:
         if not matches:
-            return None, "the SEARCH block was not found; copy the lines exactly from read_file"
+            return None, "the SEARCH block was not found. " + _closest_lines(original, search)
         return None, f"the SEARCH block matches {len(matches)} places; include more lines"
     i = matches[0]
     indent = _reindent(file_lines[i], search.strip("\n").splitlines()[0])
@@ -209,6 +210,22 @@ def apply_search_replace(original: str, search: str, replace: str) -> tuple[str 
         indent + line + "\n" if line.strip() else "\n" for line in replace.strip("\n").splitlines()
     )
     return "".join(file_lines[:i]) + new_block + "".join(file_lines[i + n :]), ""
+
+
+def _closest_lines(original: str, search: str) -> str:
+    """Point the model at the real file lines that look most like its first SEARCH line."""
+    first = next((line.strip() for line in search.splitlines() if line.strip()), "")
+    lines = original.splitlines()
+    stripped = [line.strip() for line in lines]
+    close = difflib.get_close_matches(first, stripped, n=3, cutoff=0.5)
+    if not close:
+        return "Copy the lines exactly from the source code, without line numbers."
+    shown = "\n".join(lines[stripped.index(c)] for c in close)
+    return (
+        "The closest lines in the file are:\n"
+        f"{shown}\n"
+        "Copy the lines exactly as they appear in the file, without line numbers."
+    )
 
 
 def _reindent(file_line: str, search_line: str) -> str:

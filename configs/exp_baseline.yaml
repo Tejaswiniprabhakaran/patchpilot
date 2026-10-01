@@ -11,6 +11,7 @@ llm:
   seed: 42
   max_tokens: 2048
   context_tokens: 16384
+  reasoning_effort: none  # decisions.md D10
 agent:
   max_attempts: 3
   top_k_files: 3

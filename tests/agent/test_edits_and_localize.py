@@ -3,6 +3,7 @@ from pathlib import Path
 import pytest
 
 from patchpilot.agent import parse_edits
+from patchpilot.agent.edits import strip_line_numbers
 from patchpilot.agent.localize import extract_json, is_test_path, keywords_from_text
 from patchpilot.agent.trajectory import Trajectory
 
@@ -86,3 +87,22 @@ def test_trajectory_round_trips_and_clips_long_text(tmp_path: Path) -> None:
     assert loaded.steps[0].meta == {"prompt_tokens": 3}
     assert len(loaded.steps[0].output) < 30_000
     assert "clipped" in loaded.steps[0].output
+
+
+def test_copied_line_numbers_are_stripped() -> None:
+    # Exactly what Gemma 4 E4B produced on QuixBugs gcd (runs/gcd-c93b6284.json, attempt 2).
+    reply = (
+        "python_programs/gcd.py\n<<<<<<< SEARCH\n     5          return gcd(a % b, b)\n"
+        "=======\n     5          return gcd(b, a % b)\n>>>>>>> REPLACE\n"
+    )
+
+    edit = parse_edits(reply)[0]
+
+    assert edit.search == "        return gcd(a % b, b)\n"
+    assert edit.replace == "        return gcd(b, a % b)\n"
+
+
+def test_numbers_are_kept_unless_every_line_has_one() -> None:
+    block = "    x = 1\n  12  is not a prefix here\n"
+
+    assert strip_line_numbers(block) == block

@@ -31,6 +31,8 @@ class Completion:
     completion_tokens: int
     latency_s: float
     finish_reason: str = "stop"
+    # Hidden "thinking" text some models (e.g. Gemma 4) return separately from the answer.
+    reasoning: str = ""
 
 
 class LLMConfig(BaseModel):
@@ -46,6 +48,8 @@ class LLMConfig(BaseModel):
     timeout_s: float = 1800.0
     # Ollama ignores the OpenAI-style context setting; this is passed through as num_ctx.
     context_tokens: int | None = 16384
+    # Passed to the server as `reasoning_effort` when set, e.g. "none" to switch thinking off.
+    reasoning_effort: str | None = None
 
 
 class LLMClient(Protocol):
@@ -68,7 +72,9 @@ class UsageLog:
         self.completion_tokens += completion.completion_tokens
         self.latency_s += completion.latency_s
         # The reply text is kept in the trajectory, not duplicated here.
-        self.history.append({k: v for k, v in asdict(completion).items() if k != "text"})
+        self.history.append(
+            {k: v for k, v in asdict(completion).items() if k not in ("text", "reasoning")}
+        )
 
     def totals(self) -> dict[str, float]:
         return {
@@ -100,6 +106,8 @@ class OpenAICompatibleClient:
         extra: dict[str, Any] = {}
         if self.config.context_tokens:
             extra["options"] = {"num_ctx": self.config.context_tokens}
+        if self.config.reasoning_effort:
+            extra["reasoning_effort"] = self.config.reasoning_effort
         started = time.monotonic()
         response = self._client.chat.completions.create(
             model=self.config.model,
@@ -119,9 +127,22 @@ class OpenAICompatibleClient:
             completion_tokens=getattr(usage, "completion_tokens", 0) or 0,
             latency_s=round(latency, 3),
             finish_reason=choice.finish_reason or "stop",
+            reasoning=_reasoning_text(choice.message),
         )
         self.usage.record(completion)
         return completion
+
+
+def _reasoning_text(message: Any) -> str:
+    """Servers expose thinking as `reasoning` or `reasoning_content`; either may be missing."""
+    for name in ("reasoning", "reasoning_content"):
+        value = getattr(message, name, None)
+        if value is None:
+            extra = getattr(message, "model_extra", None) or {}
+            value = extra.get(name)
+        if isinstance(value, str) and value:
+            return value
+    return ""
 
 
 class ScriptedClient:

@@ -84,3 +84,19 @@ def test_scripted_client_raises_when_out_of_replies() -> None:
 
     with pytest.raises(RuntimeError):
         client.complete([Message("user", "a")])
+
+
+def test_reasoning_is_captured_and_effort_is_sent() -> None:
+    raw = MagicMock()
+    response = fake_response("", 10, 2048)
+    response.choices[0].message.reasoning = "thinking..."
+    response.choices[0].finish_reason = "length"
+    raw.chat.completions.create.return_value = response
+    client = OpenAICompatibleClient(LLMConfig(reasoning_effort="none"), client=raw)
+
+    completion = client.complete([Message("user", "fix")])
+
+    assert raw.chat.completions.create.call_args.kwargs["extra_body"]["reasoning_effort"] == "none"
+    assert completion.reasoning == "thinking..."
+    assert completion.finish_reason == "length"
+    assert "reasoning" not in client.usage.history[0]

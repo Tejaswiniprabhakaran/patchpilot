@@ -111,3 +111,26 @@ def test_long_files_are_trimmed_to_windows_around_keywords() -> None:
     assert "def add(a, b):" in text
     assert "excerpts" in text
     assert len(text.splitlines()) < 100
+
+
+def test_cut_off_reply_gets_a_specific_hint() -> None:
+    box = FakeSandbox()
+
+    class CutOff(ScriptedClient):
+        def complete(self, messages, *, max_tokens=None):  # type: ignore[no-untyped-def]
+            completion = super().complete(messages, max_tokens=max_tokens)
+            if len(self.prompts) == 2:  # the first repair reply
+                from dataclasses import replace
+
+                return replace(completion, finish_reason="length")
+            return completion
+
+    llm = CutOff([LOCATE, "", GOOD])
+    agent = Agent(
+        llm, LLMSearchLocalizer(llm), AgentConfig(max_attempts=2), sandbox_factory=lambda _i: box
+    )  # type: ignore[arg-type,return-value]
+
+    result = agent.run(make_instance()).result
+
+    assert result["resolved"] is True
+    assert "cut off by the length limit" in llm.prompts[2][1].content

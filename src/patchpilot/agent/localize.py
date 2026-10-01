@@ -180,6 +180,8 @@ class LLMSearchLocalizer:
             duration_s=completion.latency_s,
             prompt_tokens=completion.prompt_tokens,
             completion_tokens=completion.completion_tokens,
+            finish_reason=completion.finish_reason,
+            reasoning=completion.reasoning,
         )
         return extract_json(completion.text)
 

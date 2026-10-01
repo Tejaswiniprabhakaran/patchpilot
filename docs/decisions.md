@@ -102,6 +102,21 @@ ignored `runs/` folder.
 trajectories, and the "every number traceable to results/" rule means they must be in the repo.
 Long step outputs are clipped at 20,000 characters and gzip keeps each run small.
 
+## D10 — Gemma 4 "thinking" is switched off (2026-10-01)
+
+**Measured:** on the first real run (`runs/gcd-c93b6284.json`, QuixBugs `gcd`, Gemma 4 E4B) the
+localization call and the first repair call returned an empty answer: the model spent the whole
+output budget on hidden reasoning (`finish_reason: length`). Replaying the same localization prompt
+with a 512-token limit: default settings gave an empty answer after 512 tokens (1,578 characters
+of reasoning); with `reasoning_effort: none` the model gave the correct JSON in 43 tokens.
+
+**Decision:** all configs set `llm.reasoning_effort: none`. Thinking roughly multiplies output
+tokens, which this CPU-bound setup cannot afford, and an answer cut off mid-thought is worthless
+to the agent. Thinking on/off could be added as an extra ablation later if time allows.
+
+**Also fixed from the same run:** the model copied the displayed line numbers into its SEARCH
+blocks; the parser now strips them, and "not found" feedback shows the closest real lines.
+
 ## D11 — Instances whose gold patch fails in the network-off sandbox are excluded from scoring (2026-10-01)
 
 **Measured** (`results/sanity_gold_patches.jsonl`, summary in `results/sanity_summary.csv`):
