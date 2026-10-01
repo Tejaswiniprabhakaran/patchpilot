@@ -2,7 +2,7 @@
 
 Newest entry first. Each entry: what was done, what is next, open issues, results so far.
 
-## 2026-10-01 — Phase 1: sandbox + benchmarks (in progress)
+## 2026-10-01 — Phase 1: sandbox + benchmarks (complete)
 
 **Done**
 - `DockerSandbox` (S1): network disabled, CPU/memory/pid limits, all capabilities dropped, no host
@@ -10,22 +10,19 @@ Newest entry first. Each entry: what was done, what is next, open issues, result
   parsing on the full output.
 - QuixBugs loader + image (reference solutions deleted from the image). Gold patches are read from
   git objects because Windows autocrlf broke CRLF files such as `wrap.py`.
-- Gold-patch sanity on QuixBugs: **40/40 valid** (`results/sanity_gold_patches.jsonl`).
-- SWE-bench Lite loader on the official harness (eval script + per-repo parsers), Windows shim (D6).
+- SWE-bench Lite loader on the official harness (eval script + per-repo parsers), Windows shim (D6),
+  verified + retried image pulls.
 - Seeded 50-instance subset: `configs/swebench_lite_subset_50.json` (seed 42).
-- 42 unit tests + 4 Docker integration tests passing.
-- Docker Desktop disk moved to `D:\DockerData` by the user (D: 326 GB free).
+- Docker Desktop disk moved to `D:\DockerData` by the owner; images are kept for the experiments.
+- 44 unit tests + 4 Docker integration tests on this branch.
+
+**Results** (`results/sanity_gold_patches.jsonl`, `results/sanity_summary.csv`)
+- QuixBugs: 40/40 valid (fail when buggy, pass with gold patch).
+- SWE-bench Lite subset: 49/50 valid. `psf__requests-1963` excluded from scoring: its tests need
+  the internet and the sandbox has none (D11).
 
 **Next**
-- Gold-patch sanity on the 50 SWE-bench instances (needs Docker running).
-- `docs/explained/sandbox.md` and `benchmarks.md`, Phase 1 PR into `develop`.
-
-**Open issues**
-- Docker Desktop is not starting after the disk move: its WSL distro `docker-desktop` shows
-  `Stopped` and the CLI hangs. Needs a restart from the Docker Desktop window.
-
-**Results so far**
-- QuixBugs gold-patch sanity: 40/40 valid (`results/sanity_gold_patches.jsonl`).
+- Phase 2 (already in progress on `feat/agent`): agent, CLI, then the B0 baseline.
 
 ## 2026-09-30 — Phase 0: setup
 
