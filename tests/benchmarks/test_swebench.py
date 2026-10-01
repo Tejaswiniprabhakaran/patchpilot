@@ -90,7 +90,8 @@ def test_parse_eval_log_without_markers_means_tests_never_ran(fake_harness: Magi
 
 def test_pulled_image_removes_only_images_it_pulled() -> None:
     client = MagicMock()
-    client.images.get.side_effect = docker.errors.ImageNotFound("missing")
+    # missing before the pull, present after it
+    client.images.get.side_effect = [docker.errors.ImageNotFound("missing"), None]
 
     with swebench.pulled_image("img", client=client):
         client.images.pull.assert_called_once_with("img")
