@@ -103,11 +103,25 @@ def to_instance(row: dict[str, Any], spec: Any) -> BenchmarkInstance:
         gold_patch=row["patch"],
         # The official eval script applies the test patch itself, so it is not applied twice.
         test_patch="",
+        agent_test_patch=row["test_patch"],
+        protected_paths=tuple(patched_paths(row["test_patch"])),
         setup_files={EVAL_SCRIPT_PATH: spec.eval_script},
         log_parser="swebench",
         test_timeout_s=1800,
         memory="4g",
     )
+
+
+def patched_paths(diff: str) -> list[str]:
+    """Files touched by a unified diff (from its ``+++ b/...`` / ``--- a/...`` headers)."""
+    paths: list[str] = []
+    for line in diff.splitlines():
+        for prefix in ("+++ b/", "--- a/"):
+            if line.startswith(prefix):
+                path = line[len(prefix) :].strip()
+                if path not in paths:
+                    paths.append(path)
+    return paths
 
 
 def load_instance(instance_id: str) -> BenchmarkInstance:

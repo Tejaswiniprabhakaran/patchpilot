@@ -164,7 +164,8 @@ class DockerSandbox:
             raise SandboxError(f"cannot write {full}")
 
     def read_file(self, path: str) -> str:
-        result = self.exec(f"cat {_quote(self._resolve(path))}")
+        """Full file content (never truncated: the agent edits what it reads)."""
+        result = self.exec(f"cat {_quote(self._resolve(path))}", truncate=False)
         if not result.ok:
             raise FileNotFoundError(path)
         return result.output
@@ -194,9 +195,13 @@ class DockerSandbox:
             duration_s=result.duration_s + fallback.duration_s,
         )
 
-    def diff(self) -> str:
-        """Unified diff of everything changed in the checkout since the base commit."""
-        return self.exec("git add -A && git diff --cached --no-color HEAD").output
+    def diff(self, exclude: tuple[str, ...] = ()) -> str:
+        """Unified diff of everything changed since the base commit, minus ``exclude`` paths."""
+        pathspec = " ".join(_quote(f":(exclude){path}") for path in exclude)
+        command = "git add -A && git diff --cached --no-color HEAD"
+        if pathspec:
+            command += f" -- . {pathspec}"
+        return self.exec(command, truncate=False).output
 
     def reset(self) -> None:
         """Throw away every change and return to the base commit."""

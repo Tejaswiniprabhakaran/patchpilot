@@ -39,6 +39,11 @@ class BenchmarkInstance(BaseModel):
     gold_patch: str
     # Applied before running tests (SWE-bench adds the tests that expose the bug this way).
     test_patch: str = ""
+    # Shown to the agent at the start of a run so it can see (and run) the failing test.
+    # SWE-bench keeps this separate from `test_patch` because its eval script applies it itself.
+    agent_test_patch: str = ""
+    # Paths the agent may not edit (tests); a trailing "/" protects a whole directory.
+    protected_paths: tuple[str, ...] = ()
     # Files written into the sandbox right before the tests run (e.g. SWE-bench's eval script).
     setup_files: dict[str, str] = Field(default_factory=dict)
     # How to read the test output: "pytest" (our -rA parser) or "swebench" (official parsers).

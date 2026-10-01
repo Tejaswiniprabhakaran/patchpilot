@@ -105,6 +105,7 @@ def load_instance(name: str, root: Path = DEFAULT_ROOT) -> BenchmarkInstance:
             f"--timeout={PER_TEST_TIMEOUT_S}"
         ),
         gold_patch=gold_patch(root, name),
+        protected_paths=("python_testcases/", "json_testcases/"),
         test_timeout_s=300,
         memory="1g",
     )
