@@ -124,6 +124,18 @@ def test_run_tests_parses_statuses() -> None:
     assert not result.all_passed
 
 
+def test_run_tests_parses_full_output_but_stores_truncated_copy() -> None:
+    noise = b"x" * 500
+    output = b"PASSED t.py::test_first\n" + noise + b"\nPASSED t.py::test_last\n"
+    sandbox, _, _ = make_sandbox([(0, output)], limits=SandboxLimits(max_output_chars=100))
+    sandbox.start()
+
+    result = sandbox.run_tests("pytest -rA")
+
+    assert result.passed == ["t.py::test_first", "t.py::test_last"]
+    assert len(result.output) < len(output)
+
+
 def test_run_with_no_parsed_tests_is_not_a_pass() -> None:
     sandbox, _, _ = make_sandbox([(0, b"no tests ran\n")])
     sandbox.start()

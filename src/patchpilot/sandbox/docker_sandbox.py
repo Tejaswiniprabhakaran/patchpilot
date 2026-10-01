@@ -100,8 +100,12 @@ class DockerSandbox:
 
     # ------------------------------------------------------------------ commands
 
-    def exec(self, command: str, timeout_s: int | None = None) -> ExecResult:
-        """Run a shell command in the working directory, killed after ``timeout_s`` seconds."""
+    def exec(self, command: str, timeout_s: int | None = None, truncate: bool = True) -> ExecResult:
+        """Run a shell command in the working directory, killed after ``timeout_s`` seconds.
+
+        Output longer than ``limits.max_output_chars`` is cut down to its head and tail unless
+        ``truncate`` is false.
+        """
         container = self._require_container()
         timeout = timeout_s or self.limits.timeout_s
         script = f"{self.shell_prefix}\n{command}" if self.shell_prefix else command
@@ -114,7 +118,7 @@ class DockerSandbox:
         output = (raw or b"").decode("utf-8", errors="replace")
         return ExecResult(
             exit_code=int(exit_code),
-            output=_truncate(output, self.limits.max_output_chars),
+            output=_truncate(output, self.limits.max_output_chars) if truncate else output,
             duration_s=duration,
             timed_out=exit_code in _TIMEOUT_EXIT_CODES and duration >= timeout - 1,
         )
@@ -125,12 +129,15 @@ class DockerSandbox:
         timeout_s: int | None = None,
         parser: TestParser = parse_pytest_summary,
     ) -> TestRunResult:
-        """Run a test command and parse its output into one status per test."""
-        result = self.exec(command, timeout_s)
+        """Run a test command and parse its output into one status per test.
+
+        The parser sees the full output; only the stored copy is truncated.
+        """
+        result = self.exec(command, timeout_s, truncate=False)
         return TestRunResult(
             statuses=parser(result.output),
             exit_code=result.exit_code,
-            output=result.output,
+            output=_truncate(result.output, self.limits.max_output_chars),
             duration_s=result.duration_s,
             timed_out=result.timed_out,
         )
