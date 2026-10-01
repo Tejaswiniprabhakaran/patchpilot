@@ -1,0 +1,96 @@
+{
+  "train_source": "princeton-nlp/SWE-bench",
+  "train_instances_checked": 8867,
+  "train_repos": [
+    "DataDog/integrations-core",
+    "JohnSnowLabs/spark-nlp",
+    "Lightning-AI/lightning",
+    "PrefectHQ/prefect",
+    "Qiskit/qiskit",
+    "apache/airflow",
+    "apache/mxnet",
+    "celery/celery",
+    "conan-io/conan",
+    "conda/conda",
+    "dagster-io/dagster",
+    "docker/compose",
+    "explosion/spaCy",
+    "gitpython-developers/GitPython",
+    "google/jax",
+    "googleapis/google-cloud-python",
+    "huggingface/transformers",
+    "ipython/ipython",
+    "jupyterlab/jupyterlab",
+    "kubeflow/pipelines",
+    "mesonbuild/meson",
+    "numpy/numpy",
+    "open-mmlab/mmdetection",
+    "pandas-dev/pandas",
+    "pantsbuild/pants",
+    "pyca/cryptography",
+    "pypa/pip",
+    "python/typeshed",
+    "ray-project/ray",
+    "scipy/scipy",
+    "tensorflow/models",
+    "tiangolo/fastapi",
+    "twisted/twisted",
+    "wagtail/wagtail",
+    "ytdl-org/youtube-dl"
+  ],
+  "all_train_split_instances_checked": 19008,
+  "eval_source": "princeton-nlp/SWE-bench_Lite",
+  "eval_instances_checked": 300,
+  "eval_repos": [
+    "astropy/astropy",
+    "django/django",
+    "matplotlib/matplotlib",
+    "mwaskom/seaborn",
+    "pallets/flask",
+    "psf/requests",
+    "pydata/xarray",
+    "pylint-dev/pylint",
+    "pytest-dev/pytest",
+    "scikit-learn/scikit-learn",
+    "sphinx-doc/sphinx",
+    "sympy/sympy"
+  ],
+  "eval_subset_instances": 50,
+  "selected_train_vs_eval": {
+    "repo": {
+      "overlapping_eval_instances": 0,
+      "examples": []
+    },
+    "instance_id": {
+      "overlapping_eval_instances": 0,
+      "examples": []
+    },
+    "issue_text": {
+      "overlapping_eval_instances": 0,
+      "examples": []
+    },
+    "gold_patch": {
+      "overlapping_eval_instances": 0,
+      "examples": []
+    }
+  },
+  "full_train_split_vs_eval": {
+    "repo": {
+      "overlapping_eval_instances": 0,
+      "examples": []
+    },
+    "instance_id": {
+      "overlapping_eval_instances": 0,
+      "examples": []
+    },
+    "issue_text": {
+      "overlapping_eval_instances": 0,
+      "examples": []
+    },
+    "gold_patch": {
+      "overlapping_eval_instances": 0,
+      "examples": []
+    }
+  },
+  "leak_free": true
+}
