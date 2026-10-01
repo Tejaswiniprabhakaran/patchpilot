@@ -16,6 +16,7 @@ dependencies = [
     "pyyaml>=6.0",
     "docker>=7.1",
     "openai>=1.40",
+    "rank-bm25>=0.2.2",
 ]
 
 [project.optional-dependencies]
@@ -53,7 +54,7 @@ files = ["src/patchpilot"]
 warn_unused_ignores = true
 
 [[tool.mypy.overrides]]
-module = ["docker.*", "datasets.*", "swebench.*"]
+module = ["docker.*", "datasets.*", "swebench.*", "rank_bm25.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
