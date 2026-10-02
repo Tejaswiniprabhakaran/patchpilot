@@ -160,3 +160,17 @@ renting or scheduling remote GPU time.
 **Consequences, stated in the report:** results are for a small (4-billion-effective-parameter)
 model; the SWE-bench sample is small, so per-config differences there will rarely be
 statistically significant and QuixBugs carries most of the statistical power.
+
+## D13 — Infrastructure stalls are re-run once, by a fixed rule (2026-10-02)
+
+**Observed:** in B0, `breadth_first_search` spent 3,799 s on one model call with a 1,623-token
+prompt and a 76-token answer (comparable calls take minutes), most likely because the laptop
+slept; the instance's one-hour budget ran out before any repair attempt.
+
+**Rule (decided before looking at which instances it affects):** a result row is an
+infrastructure failure if the run ended with a model-server error or any single model call took
+longer than 1,800 s. Such rows are moved to `results/<exp>/infra_failures.jsonl` (trajectories
+kept) and the instance is run again **once**; a second infrastructure failure stays in the
+results as an environment error. The rule ignores whether the bug was fixed, so it cannot favour
+any configuration. The model client timeout is 1,800 s with no silent retries, and the session
+keeps the laptop awake during experiments. Script: `scripts/requeue_infra_failures.py`.

@@ -45,6 +45,7 @@ class LLMConfig(BaseModel):
     temperature: float = 0.0
     max_tokens: int = 2048
     seed: int | None = 42
+    # A call taking longer than this is treated as an infrastructure stall (decisions D13).
     timeout_s: float = 1800.0
     # Ollama ignores the OpenAI-style context setting; this is passed through as num_ctx.
     context_tokens: int | None = 16384
@@ -98,7 +99,7 @@ class OpenAICompatibleClient:
                 base_url=config.base_url,
                 api_key=os.environ.get(config.api_key_env) or "not-needed",
                 timeout=config.timeout_s,
-                max_retries=2,
+                max_retries=0,  # a stall must surface as an error, not be retried silently
             )
         self._client = client
 
