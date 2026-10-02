@@ -174,3 +174,30 @@ kept) and the instance is run again **once**; a second infrastructure failure st
 results as an environment error. The rule ignores whether the bug was fixed, so it cannot favour
 any configuration. The model client timeout is 1,800 s with no silent retries, and the session
 keeps the laptop awake during experiments. Script: `scripts/requeue_infra_failures.py`.
+
+## D14 — Resource limits: PatchPilot must never affect the owner's other projects (2026-10-02)
+
+PatchPilot shares the laptop with the owner's main projects (FlagLens, NovaKart, Meridian).
+Owner's rules, now binding for every session:
+
+- C: keeps at least 20 GB free; PatchPilot uses under 10 GB in total (Docker images included).
+  Sizes are checked and reported before any large download, build or image pull; temporary data
+  is deleted as soon as it has been extracted; clones are shallow (`--depth 1`).
+- Docker: only `patchpilot/*` and PatchPilot-pulled `swebench/*` images and `patchpilot.sandbox`
+  containers are ever touched, deleted by exact name. No `docker system prune`,
+  `docker image prune -a`, `docker volume prune` or `docker compose down -v`; other projects'
+  containers are never stopped or changed; Docker Desktop settings are never changed.
+- Reserved ports that PatchPilot must never bind: 7100-7123, 7201-7203, 9094, 9100, 9101, 9201,
+  27117, 5435, 6380, 3307, 3001-3003, 4001-4023, 8081-8083, 5433, 5000, 5001, 5434.
+- One heavy job at a time, at Below Normal priority; never two copies of the same evaluation.
+
+**Consequences for the design (replaces the "keep images" update in D5):**
+- SWE-bench images are pulled **one at a time**, used for every pending configuration, then
+  deleted (`pulled_image(prune=True)`). About 4-5 GB is in use only while one image is active.
+- The base and the fine-tuned Gemma 4 E4B (about 6 GB each in Ollama) are never installed at the
+  same time: base-model experiments (B0, E1) run first, then the base model is removed before
+  the fine-tuned one is loaded.
+
+**Cleanup on 2026-10-02:** 50 `swebench/*` images and `python:3.11-slim` were deleted by name
+(Docker image total 90.3 GB -> 18.0 GB), two exited sandbox containers removed, pip cache purged
+(2.5 GB). Every other project's image and container was verified unchanged afterwards.
