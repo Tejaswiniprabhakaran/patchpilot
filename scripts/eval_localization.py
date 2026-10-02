@@ -116,7 +116,7 @@ def eval_swebench(method: str, rerank: RankFn | None, limit: int | None) -> list
     rows = []
     for instance_id in ids:
         instance = swebench.load_instance(instance_id)
-        with swebench.pulled_image(instance.image, prune=False), instance.sandbox() as box:
+        with swebench.pulled_image(instance.image, prune=True), instance.sandbox() as box:
             box.reset()
             all_files = repo_python_files(box)
         files = {p: c for p, c in all_files.items() if not is_test_path(p)}
