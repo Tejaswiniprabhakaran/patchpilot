@@ -70,7 +70,7 @@ def fix(
         if target.benchmark == "swebench-lite":
             from patchpilot.benchmarks import swebench
 
-            with swebench.pulled_image(target.image, prune=False):
+            with swebench.pulled_image(target.image, prune=True):  # D14: one image at a time
                 trajectory = make_agent(exp).run(target, {"experiment": "fix"})
         else:
             trajectory = make_agent(exp).run(target, {"experiment": "fix"})

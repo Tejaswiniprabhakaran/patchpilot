@@ -144,7 +144,7 @@ def _run_one(agent: Agent, instance: BenchmarkInstance, config: ExperimentConfig
     if instance.benchmark == "swebench-lite":
         from patchpilot.benchmarks import swebench
 
-        with swebench.pulled_image(instance.image, prune=False):
+        with swebench.pulled_image(instance.image, prune=True):  # D14: one image at a time
             return agent.run(instance, run_config)
     return agent.run(instance, run_config)
 

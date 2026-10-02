@@ -40,7 +40,7 @@ def main() -> None:
     parser.add_argument("--output", type=Path, default=OUTPUT)
     parser.add_argument("--instance", action="append", help="only check these instance ids")
     parser.add_argument(
-        "--prune", action="store_true", help="remove each SWE-bench image after use (D5)"
+        "--keep-images", action="store_true", help="keep SWE-bench images (default: delete, D14)"
     )
     args = parser.parse_args()
 
@@ -63,7 +63,7 @@ def main() -> None:
                 if instance.benchmark == "swebench-lite":
                     from patchpilot.benchmarks import swebench
 
-                    with swebench.pulled_image(instance.image, prune=args.prune):
+                    with swebench.pulled_image(instance.image, prune=not args.keep_images):
                         record = check_instance(instance)
                 else:
                     record = check_instance(instance)
