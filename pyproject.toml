@@ -54,7 +54,7 @@ files = ["src/patchpilot"]
 warn_unused_ignores = true
 
 [[tool.mypy.overrides]]
-module = ["docker.*", "datasets.*", "swebench.*", "rank_bm25.*"]
+module = ["docker.*", "datasets.*", "swebench.*", "rank_bm25.*", "sentence_transformers.*", "faiss.*", "transformers.*", "torch.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
