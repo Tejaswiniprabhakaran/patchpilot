@@ -2,6 +2,44 @@
 
 Newest entry first. Each entry: what was done, what is next, open issues, results so far.
 
+## How to pause and resume (resource rules, decisions D14)
+
+```powershell
+# pause everything PatchPilot runs (other projects are never touched)
+powershell -File C:\dev\patchpilot\scripts\pause_patchpilot.ps1
+# resume B0 on QuixBugs (skips finished instances; refuses to start a second copy)
+cd C:\dev\patchpilot; powershell -File scripts/run_detached.ps1 -Name B0_quixbugs eval --config configs/exp_baseline.yaml --benchmark quixbugs
+```
+
+## 2026-10-02 — Phase 2 baseline running, Phase 3 started, resource rules
+
+**Done**
+- Phase 2 (`feat/agent-loop`): LLM client, tools, agent loop, CLI, runner; first real fix
+  (QuixBugs `gcd`, dev run) after fixing copied line numbers and Gemma 4 thinking (D10).
+- CPU speed measured (`results/llm_speed_cpu.jsonl`); owner chose CPU scale: Gemma 4 E4B,
+  QuixBugs 40 + 10 SWE-bench instances (D12).
+- B0 running detached at Below Normal: 13/40 QuixBugs rows so far in `results/B0/quixbugs.jsonl`
+  (code `68064c3`+; one stalled row re-queued under rule D13 and re-run).
+- Phase 3 (`data/localization`, worktree `C:\dev\patchpilot-loc`): patch/unit labels, BM25,
+  metrics, dataset builder, leakage check (zero overlap, `results/leakage_check.json`), embedding
+  retrieval, cross-encoder, RankerLocalizer, evaluation script, Kaggle notebook 01, dataset card.
+- Owner's resource rules adopted (D14): 50 `swebench/*` images deleted by name (Docker 90.3 ->
+  18.0 GB), pip cache purged; other projects' images/containers verified unchanged. PatchPilot now
+  uses about 7.8 GB in total.
+
+**Paused**
+- Localization dataset build (pass 1 had cached 8,785/8,867 gold sources). Resume only after B0
+  finishes: `cd C:\dev\patchpilot-loc` then
+  `$env:PYTHONPATH="src"; C:\dev\patchpilot\.venv\Scripts\python.exe scripts/build_localization_data.py`.
+
+**Next**
+- B0 QuixBugs -> B0 SWE-bench (one image at a time) -> Phase 2 PR, v0.1.0.
+- Finish the dataset build, upload it (needs the owner's Hugging Face login), Kaggle training.
+
+**Open issues**
+- Docker Desktop stops after unclean shutdowns (stale socket files); if it is down, tell the owner.
+- Docker's `docker_data.vhdx` on D: is 88 GB and does not shrink by itself (owner's decision).
+
 ## 2026-10-01 — Phase 1: sandbox + benchmarks (complete)
 
 **Done**
