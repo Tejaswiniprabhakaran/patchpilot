@@ -11,6 +11,24 @@ powershell -File C:\dev\patchpilot\scripts\pause_patchpilot.ps1
 cd C:\dev\patchpilot; powershell -File scripts/run_detached.ps1 -Name B0_quixbugs eval --config configs/exp_baseline.yaml --benchmark quixbugs
 ```
 
+## 2026-10-04 — Datasets built and on the Hub; Kaggle checkpoint
+
+**Done**
+- Localization dataset (`data/localization`): 6,329 / 1,020 / 1,212 instances, split by repository
+  (`results/localization/dataset_stats.json`, `dataset_function_stats.json`), uploaded to
+  `Tejaswiniprabhakaran19/patchpilot-localization`. Function-level scoring now ignores
+  module-level labels (`function_targets`).
+- Phase 4 started (`data/patchgen`, worktree `C:\dev\patchpilot-gen`): SFT data builder, notebook
+  02 (Gemma 4 E4B QLoRA -> GGUF Q4_K_M), dataset card, decision D15. Dataset 3,063 / 494 / 580
+  chats (`results/patchgen/dataset_stats.json`), uploaded to
+  `Tejaswiniprabhakaran19/patchpilot-patchgen`.
+- Cleanup: oracle cache, small test builds and SWE-bench train caches deleted (~730 MB).
+
+**Waiting on the owner**
+- Run notebook 01 on Kaggle (then notebook 02); screenshots `kaggle_fl_training.png`,
+  `kaggle_fl_loss.png`.
+- Docker Desktop is down: B0 is stopped at 16/40 QuixBugs instances.
+
 ## 2026-10-02 — Phase 2 baseline running, Phase 3 started, resource rules
 
 **Done**
