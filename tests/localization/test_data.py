@@ -122,3 +122,10 @@ def test_examples_round_trip(tmp_path: Path) -> None:
     assert counts == {"train": 0, "val": 1, "test": 0}
     assert loaded[0].gold_units == example.gold_units
     assert loaded[0].files[0].label == 1
+
+
+def test_function_targets_drop_module_level_labels() -> None:
+    units = ["pkg/a.py::<module>", "pkg/a.py::Parser.parse", "pkg/b.py::helper"]
+
+    assert locdata.function_targets(units) == ["pkg/a.py::Parser.parse", "pkg/b.py::helper"]
+    assert locdata.function_targets(["pkg/a.py::<module>"]) == []

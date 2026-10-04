@@ -30,7 +30,7 @@ from pathlib import Path
 from typing import Any
 
 from patchpilot.agent.localize import is_test_path
-from patchpilot.localization.code_units import edited_units, extract_units
+from patchpilot.localization.code_units import MODULE, edited_units, extract_units
 from patchpilot.localization.patches import edited_lines
 
 SOURCE_DATASET = "princeton-nlp/SWE-bench"
@@ -105,6 +105,16 @@ def unit_text(path: str, name: str, source: str, max_chars: int = MAX_UNIT_CHARS
 
 
 # ---------------------------------------------------------------------- examples
+
+
+def function_targets(gold_units: Iterable[str]) -> list[str]:
+    """Gold units that are real functions.
+
+    An edit to module-level code is labelled ``path::<module>``. No candidate is ever a whole
+    module, so such labels are left out of function-level scoring instead of counting as
+    automatic misses for every method.
+    """
+    return [unit for unit in gold_units if not unit.endswith(f"::{MODULE}")]
 
 
 def build_example(
