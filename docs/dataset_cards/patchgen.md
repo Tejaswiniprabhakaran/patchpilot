@@ -36,7 +36,20 @@ normalised issue text and normalised gold patch (`results/leakage_check.json`).
 
 ## Size
 
-TODO: not yet built. Filled in from `results/patchgen/dataset_stats.json` after the full build.
+From `results/patchgen/dataset_stats.json`:
+
+| Split | Chats |
+|---|---|
+| train | 3,063 |
+| val | 494 |
+| test | 580 |
+
+Of the 8,867 selected training-split instances, 4,137 became chats. Skipped: 4,113 not
+SWE-bench-Lite-shaped (more than one file or more than three hunks), 235 too long, 197 with no
+existing non-test Python file edited, 101 absent from `SWE-bench_oracle`, 78 whose diff could not
+be turned into unique SEARCH/REPLACE blocks that reproduce `git apply`, and 6 whose edited file was
+missing from the oracle text. User + assistant length: median 5,207 characters, maximum 9,995.
+The splits use the same repositories as the localization dataset.
 
 ## Format
 
