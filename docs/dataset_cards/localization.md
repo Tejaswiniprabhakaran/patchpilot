@@ -47,7 +47,26 @@ keys**.
 
 ## Size
 
-TODO: not yet built. Filled in from `results/localization/dataset_stats.json` after the full build.
+From `results/localization/dataset_stats.json` and `results/localization/dataset_function_stats.json`:
+
+| Split | Repositories | Instances | File candidates (positive) | Function candidates (positive functions) | Instances with a gold function |
+|---|---|---|---|---|---|
+| train | 26 | 6,329 | 44,665 (15,931) | 824,343 (26,794) | 5,378 |
+| val | 5 | 1,020 | 6,382 (3,188) | 125,239 (4,116) | 888 |
+| test | 4 | 1,212 | 7,296 (3,263) | 208,766 (6,066) | 1,107 |
+
+- Validation repositories: huggingface/transformers, open-mmlab/mmdetection, pypa/pip, scipy/scipy,
+  tiangolo/fastapi. Test repositories: apache/airflow, conda/conda, explosion/spaCy,
+  mesonbuild/meson. No repository appears in more than one split.
+- Of the 8,867 selected instances, 101 do not appear in `SWE-bench_oracle`'s train split and 205
+  edit no existing non-test Python file; the remaining 8,561 were built.
+- Median candidates per instance: 5-6 files and 91-112 functions.
+- **Module-level edits:** an edited line outside any function (imports, class attributes, new
+  top-level code) is labelled `path::<module>` (10,268 / 2,073 / 2,000 such labels in
+  train / val / test). No candidate is ever a whole module, so these labels are excluded from
+  function-level scoring (`function_targets()`); 951 / 132 / 105 instances only edit module-level
+  code and are therefore scored at file level only. The `positive_functions` field of
+  `dataset_stats.json` counts these labels too.
 
 ## Format
 

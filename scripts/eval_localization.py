@@ -80,6 +80,7 @@ def eval_heldout(
         file_texts = [c.text for c in ex.files]
         unit_ids = [c.cid for c in ex.units]
         unit_texts = [c.text for c in ex.units]
+        gold_fns = locdata.function_targets(ex.gold_units)
         if rerank is None:
             files = bm25_order(ex.query, file_ids, file_texts)
             units = bm25_order(ex.query, unit_ids, unit_texts) if unit_ids else []
@@ -93,8 +94,8 @@ def eval_heldout(
                 "file_candidates": len(file_ids),
                 "unit_candidates": len(unit_ids),
                 "file_rank": first_hit_rank(files, ex.gold_files),
-                "unit_rank": first_hit_rank(units, ex.gold_units) if ex.gold_units else None,
-                "has_gold_units": bool(ex.gold_units),
+                "unit_rank": first_hit_rank(units, gold_fns) if gold_fns else None,
+                "has_gold_units": bool(gold_fns),
             }
         )
     return rows
@@ -122,11 +123,11 @@ def eval_swebench(method: str, rerank: RankFn | None, limit: int | None) -> list
         files = {p: c for p, c in all_files.items() if not is_test_path(p)}
         edits = edited_lines(instance.gold_patch)
         gold_files = [p for p in edits if p in files]
-        gold_units = [
+        gold_units = locdata.function_targets(
             f"{p}::{name}"
             for p in gold_files
             for name in edited_units(extract_units(p, files[p]), edits[p].lines)
-        ]
+        )
         ranked = bm25_order(
             instance.problem_statement, list(files), [document_text(p, c) for p, c in files.items()]
         )

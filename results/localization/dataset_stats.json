@@ -1,0 +1,81 @@
+{
+  "source": [
+    "princeton-nlp/SWE-bench",
+    "princeton-nlp/SWE-bench_oracle",
+    "princeton-nlp/SWE-bench_bm25_27K"
+  ],
+  "seed": 42,
+  "per_repo_cap": 400,
+  "selected_instances": 8867,
+  "examples": {
+    "train": 6329,
+    "val": 1020,
+    "test": 1212
+  },
+  "skipped": {
+    "no_python_source_edit": 205
+  },
+  "repo_split": {
+    "conda/conda": "test",
+    "explosion/spaCy": "test",
+    "apache/airflow": "test",
+    "mesonbuild/meson": "test",
+    "tiangolo/fastapi": "val",
+    "open-mmlab/mmdetection": "val",
+    "scipy/scipy": "val",
+    "huggingface/transformers": "val",
+    "pypa/pip": "val",
+    "pantsbuild/pants": "train",
+    "google/jax": "train",
+    "dagster-io/dagster": "train",
+    "docker/compose": "train",
+    "python/typeshed": "train",
+    "conan-io/conan": "train",
+    "kubeflow/pipelines": "train",
+    "tensorflow/models": "train",
+    "apache/mxnet": "train",
+    "pyca/cryptography": "train",
+    "DataDog/integrations-core": "train",
+    "wagtail/wagtail": "train",
+    "gitpython-developers/GitPython": "train",
+    "jupyterlab/jupyterlab": "train",
+    "Lightning-AI/lightning": "train",
+    "twisted/twisted": "train",
+    "ray-project/ray": "train",
+    "numpy/numpy": "train",
+    "PrefectHQ/prefect": "train",
+    "pandas-dev/pandas": "train",
+    "Qiskit/qiskit": "train",
+    "ytdl-org/youtube-dl": "train",
+    "googleapis/google-cloud-python": "train",
+    "ipython/ipython": "train",
+    "JohnSnowLabs/spark-nlp": "train",
+    "celery/celery": "train"
+  },
+  "per_split": {
+    "train": {
+      "examples": 6329,
+      "repos": 26,
+      "file_candidates": 44665,
+      "positive_files": 15931,
+      "function_candidates": 824343,
+      "positive_functions": 37062
+    },
+    "val": {
+      "examples": 1020,
+      "repos": 5,
+      "file_candidates": 6382,
+      "positive_files": 3188,
+      "function_candidates": 125239,
+      "positive_functions": 6189
+    },
+    "test": {
+      "examples": 1212,
+      "repos": 4,
+      "file_candidates": 7296,
+      "positive_files": 3263,
+      "function_candidates": 208766,
+      "positive_functions": 8066
+    }
+  }
+}

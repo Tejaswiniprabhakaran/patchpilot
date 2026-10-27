@@ -1,0 +1,32 @@
+{
+  "train": {
+    "examples": 6329,
+    "examples_with_gold_function": 5378,
+    "examples_module_level_only": 951,
+    "examples_without_any_unit_label": 0,
+    "gold_functions": 26794,
+    "module_level_labels": 10268,
+    "median_file_candidates": 6,
+    "median_function_candidates": 102
+  },
+  "val": {
+    "examples": 1020,
+    "examples_with_gold_function": 888,
+    "examples_module_level_only": 132,
+    "examples_without_any_unit_label": 0,
+    "gold_functions": 4116,
+    "module_level_labels": 2073,
+    "median_file_candidates": 5.0,
+    "median_function_candidates": 91.0
+  },
+  "test": {
+    "examples": 1212,
+    "examples_with_gold_function": 1107,
+    "examples_module_level_only": 105,
+    "examples_without_any_unit_label": 0,
+    "gold_functions": 6066,
+    "module_level_labels": 2000,
+    "median_file_candidates": 5.0,
+    "median_function_candidates": 112.0
+  }
+}
