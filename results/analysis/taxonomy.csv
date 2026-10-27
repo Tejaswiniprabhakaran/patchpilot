@@ -1,0 +1,4 @@
+experiment,benchmark,category,description,count,failed_runs,share,experiment_status
+B0,quixbugs,patch_invalid,Patch does not apply / syntax error / no edit produced,3,7,0.4286,incomplete
+B0,quixbugs,wrong_function,"Right file, wrong location (function or lines)",2,7,0.2857,incomplete
+B0,quixbugs,incomplete_fix,"Incomplete fix (right place, tests still fail)",2,7,0.2857,incomplete
