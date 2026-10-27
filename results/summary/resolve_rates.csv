@@ -1,0 +1,13 @@
+config,benchmark,description,status,resolved,n,rate,ci95_low,ci95_high,excluded,source
+B0,quixbugs,"LLM-search localization, base Gemma 4 E4B, 3 attempts",incomplete (16 instances so far),9,16,0.5625,0.3318,0.769,,results/B0/quixbugs.jsonl
+E1,quixbugs,"trained ranker, base Gemma 4 E4B, 3 attempts",TODO: not yet run,,,,,,,results/E1/quixbugs.jsonl
+E2,quixbugs,"LLM-search localization, fine-tuned Gemma 4 E4B, 3 attempts",TODO: not yet run,,,,,,,results/E2/quixbugs.jsonl
+E3,quixbugs,"trained ranker, fine-tuned Gemma 4 E4B, 3 attempts",TODO: not yet run,,,,,,,results/E3/quixbugs.jsonl
+E4,quixbugs,"trained ranker, fine-tuned Gemma 4 E4B, 1 attempt",TODO: not yet run,,,,,,,results/E3/quixbugs.jsonl
+G1,quixbugs,"trained ranker, Gemini API reference (optional)",TODO: not yet run,,,,,,,results/G1/quixbugs.jsonl
+B0,swebench-lite,"LLM-search localization, base Gemma 4 E4B, 3 attempts",TODO: not yet run,,,,,,,results/B0/swebench-lite.jsonl
+E1,swebench-lite,"trained ranker, base Gemma 4 E4B, 3 attempts",TODO: not yet run,,,,,,,results/E1/swebench-lite.jsonl
+E2,swebench-lite,"LLM-search localization, fine-tuned Gemma 4 E4B, 3 attempts",TODO: not yet run,,,,,,,results/E2/swebench-lite.jsonl
+E3,swebench-lite,"trained ranker, fine-tuned Gemma 4 E4B, 3 attempts",TODO: not yet run,,,,,,,results/E3/swebench-lite.jsonl
+E4,swebench-lite,"trained ranker, fine-tuned Gemma 4 E4B, 1 attempt",TODO: not yet run,,,,,,,results/E3/swebench-lite.jsonl
+G1,swebench-lite,"trained ranker, Gemini API reference (optional)",TODO: not yet run,,,,,,,results/G1/swebench-lite.jsonl
