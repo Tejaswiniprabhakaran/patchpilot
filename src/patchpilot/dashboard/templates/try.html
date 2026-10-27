@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Try it{% endblock %}
+{% block content %}
+<h1>Try it: watch the agent fix a bug</h1>
+<p>Pick a QuixBugs program. The agent (base Gemma 4 E4B on this laptop's CPU) reproduces the failing
+test, locates the bug, proposes an edit and runs the tests in a network-isolated Docker sandbox,
+retrying with feedback. Expect several minutes per model call.</p>
+<p id="health" class="banner muted" role="status">Checking Docker and Ollama…</p>
+<form id="try-form" class="filters">
+  <label>QuixBugs program
+    <select id="instance" name="instance_id">
+      {% for i in instances %}<option value="{{ i }}">{{ i }}</option>{% else %}<option value="">(QuixBugs not downloaded)</option>{% endfor %}
+    </select>
+  </label>
+  <button id="start" type="submit" disabled>Start</button>
+</form>
+{% if active %}<p class="muted">Most recent live run: <code>{{ active }}</code></p>{% endif %}
+<p id="state" class="muted" role="status" aria-live="polite"></p>
+<ol id="steps" class="steps"></ol>
+<section id="result" hidden>
+  <h2>Result</h2>
+  <p id="result-line"></p>
+  <div id="patch"></div>
+</section>
+<script src="/static/try.js"></script>
+{% endblock %}

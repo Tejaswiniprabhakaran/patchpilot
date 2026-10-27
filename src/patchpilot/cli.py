@@ -170,3 +170,26 @@ def _print_result(data: dict[str, Any]) -> None:
     console.print(Panel("\n".join(lines), title="Result"))
     if result.get("final_patch"):
         console.print(Syntax(result["final_patch"], "diff", theme="ansi_dark"))
+
+
+@app.command()
+def dashboard(
+    host: Annotated[str, typer.Option(help="interface to bind (keep 127.0.0.1)")] = "127.0.0.1",
+    port: Annotated[int, typer.Option(help="port (8765 by default)")] = 8765,
+) -> None:
+    """Start the web dashboard: runs, trajectories, diffs, metrics and a live Try-it page."""
+    import uvicorn
+
+    from patchpilot.dashboard.app import check_port, create_app
+
+    try:
+        check_port(port)
+    except ValueError as error:
+        console.print(f"[red]{error}[/]")
+        raise typer.Exit(2) from error
+    if host not in ("127.0.0.1", "localhost"):
+        console.print(
+            "[yellow]Warning: the dashboard is meant to be reachable from this machine only.[/]"
+        )
+    console.print(f"PatchPilot dashboard on http://{host}:{port}")
+    uvicorn.run(create_app(), host=host, port=port, log_level="warning")

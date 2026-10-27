@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}{{ t.instance_id }}{% endblock %}
+{% block content %}
+{% set r = t.result %}
+<p><a href="/">← All runs</a></p>
+<h1>{{ t.benchmark }} / {{ t.instance_id }}</h1>
+<p class="muted">{{ experiment }} · run <code>{{ t.run_id }}</code> · started {{ t.started_at }}</p>
+
+<section class="cards">
+  <div class="card"><div class="label">Result</div><div class="value">{% if r.error %}⚠ error{% elif r.resolved %}✓ resolved{% else %}✗ not resolved{% endif %}</div></div>
+  <div class="card"><div class="label">Attempts used</div><div class="value">{{ r.attempts_used }}</div></div>
+  <div class="card"><div class="label">Wall time</div><div class="value">{{ "%.0f"|format(r.wall_s) if r.wall_s is not none else "-" }} s</div></div>
+  <div class="card"><div class="label">LLM calls · tokens in/out</div><div class="value">{{ r.llm_calls }} · {{ r.prompt_tokens }}/{{ r.completion_tokens }}</div></div>
+</section>
+{% if r.error %}<p class="status bad">⚠ {{ r.error }}</p>{% endif %}
+<p><strong>Localized files:</strong> {{ (r.localized_files or [])|join(", ") or "-" }}</p>
+
+<h2>Final patch</h2>
+{{ final_diff|safe }}
+
+{% if attempt_diffs|length > 1 %}
+<h2>Every attempt</h2>
+{% for a in attempt_diffs %}
+<details><summary>Attempt {{ a.attempt }}</summary>{{ a.html|safe }}</details>
+{% endfor %}
+{% endif %}
+
+<h2>Trajectory ({{ t.steps|length }} steps)</h2>
+<ol class="steps">
+{% for s in t.steps %}
+  <li class="step {{ s.kind }}">
+    <details>
+      <summary>
+        <span class="kind">{{ s.kind }}</span>
+        <span class="name">{{ s.name }}</span>
+        {% if s.input.attempt %}<span class="muted">attempt {{ s.input.attempt }}</span>{% endif %}
+        <span class="{{ 'good' if s.ok else 'bad' }}">{{ "✓" if s.ok else "✗" }}</span>
+        <span class="muted">{{ "%.1f"|format(s.duration_s) }} s</span>
+      </summary>
+      {% set args = s.input %}
+      {% if args.prompt %}<details><summary>Prompt</summary><pre>{{ args.prompt }}</pre></details>{% endif %}
+      {% for k, v in args.items() if k not in ("prompt",) %}<p class="muted"><code>{{ k }}</code>: <code>{{ v }}</code></p>{% endfor %}
+      <pre>{{ s.output }}</pre>
+    </details>
+  </li>
+{% endfor %}
+</ol>
+{% endblock %}
