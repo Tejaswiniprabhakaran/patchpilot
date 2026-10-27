@@ -201,3 +201,18 @@ Owner's rules, now binding for every session:
 **Cleanup on 2026-10-02:** 50 `swebench/*` images and `python:3.11-slim` were deleted by name
 (Docker image total 90.3 GB -> 18.0 GB), two exited sandbox containers removed, pip cache purged
 (2.5 GB). Every other project's image and container was verified unchanged afterwards.
+
+## D15 — Patch-generation training data: SWE-bench Lite-shaped fixes only (2026-10-04)
+
+**Measured** on the first 300 selected training instances (smoke build, not a reported result):
+with a 10,000-character limit, 181 of 300 chats were too long; the long ones were multi-file
+fixes (median 3 files, 7,063-character answers versus 1 file and 2,465 characters overall).
+
+**Decision:** keep only gold patches that edit one existing non-test Python file in at most three
+hunks, the same rule SWE-bench Lite used to select its instances; QuixBugs fixes are one-liners.
+Issue text is capped at 3,000 characters, test patches at 1,500, and code windows are 15 lines.
+On the smoke build this kept 123 of 300 instances, with only 13 dropped for length.
+
+**Why:** the fine-tuned model is evaluated on Lite-shaped and QuixBugs fixes, a T4 cannot train on
+very long sequences, and dropping by shape is principled where dropping by length alone would
+silently remove the hardest examples.
