@@ -16,6 +16,7 @@ dependencies = [
     "pyyaml>=6.0",
     "docker>=7.1",
     "openai>=1.40",
+    "rank-bm25>=0.2.2",
 ]
 
 [project.optional-dependencies]
@@ -46,6 +47,10 @@ src = ["src", "tests"]
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM", "N", "RUF"]
 
+[tool.ruff.lint.per-file-ignores]
+# One-off notebook cells: plain open() and zip() are fine there.
+"*.ipynb" = ["SIM115", "B905"]
+
 [tool.mypy]
 python_version = "3.11"
 strict = true
@@ -53,12 +58,12 @@ files = ["src/patchpilot"]
 warn_unused_ignores = true
 
 [[tool.mypy.overrides]]
-module = ["docker.*", "datasets.*", "swebench.*"]
+module = ["docker.*", "datasets.*", "swebench.*", "rank_bm25.*", "sentence_transformers.*", "faiss.*", "transformers.*", "torch.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["."]
+pythonpath = ["src", "."]
 addopts = "-ra --strict-markers"
 markers = [
     "integration: needs a running Docker daemon (deselect with -m 'not integration')",
