@@ -134,3 +134,18 @@ def test_cut_off_reply_gets_a_specific_hint() -> None:
 
     assert result["resolved"] is True
     assert "cut off by the length limit" in llm.prompts[2][1].content
+
+
+def test_on_step_streams_every_step_and_is_not_serialised() -> None:
+    box = FakeSandbox()
+    llm = ScriptedClient([LOCATE, GOOD])
+    seen: list[str] = []
+    agent = Agent(llm, LLMSearchLocalizer(llm), sandbox_factory=lambda _i: box)  # type: ignore[arg-type,return-value]
+
+    trajectory = agent.run(
+        make_instance(), on_step=lambda step: seen.append(step.name), run_id="live-1"
+    )
+
+    assert trajectory.run_id == "live-1"
+    assert seen == [s.name for s in trajectory.steps]
+    assert "_listener" not in trajectory.to_dict()

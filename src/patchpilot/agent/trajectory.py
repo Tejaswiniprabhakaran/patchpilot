@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import time
+from collections.abc import Callable
 from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
@@ -56,7 +57,17 @@ class Trajectory:
             meta=meta,
         )
         self.steps.append(step)
+        listener = self.__dict__.get("_listener")
+        if listener is not None:
+            listener(step)
         return step
+
+    def set_listener(self, listener: Callable[[Step], None] | None) -> None:
+        """Call ``listener`` with every new step (the dashboard streams a live run this way).
+
+        Stored outside the dataclass fields, so it is never serialised with the trajectory.
+        """
+        self.__dict__["_listener"] = listener
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)

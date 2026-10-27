@@ -23,7 +23,7 @@ from pydantic import BaseModel
 from patchpilot.agent import prompts
 from patchpilot.agent.edits import parse_edits
 from patchpilot.agent.localize import Localization, Localizer, keywords_from_text
-from patchpilot.agent.trajectory import Timer, Trajectory
+from patchpilot.agent.trajectory import Step, Timer, Trajectory
 from patchpilot.benchmarks import BenchmarkInstance, evaluate_patch, is_resolved
 from patchpilot.llm import LLMClient, Message
 from patchpilot.sandbox import DockerSandbox
@@ -68,15 +68,20 @@ class Agent:
     # ------------------------------------------------------------------ public
 
     def run(
-        self, instance: BenchmarkInstance, run_config: dict[str, Any] | None = None
+        self,
+        instance: BenchmarkInstance,
+        run_config: dict[str, Any] | None = None,
+        on_step: Callable[[Step], None] | None = None,
+        run_id: str | None = None,
     ) -> Trajectory:
         trajectory = Trajectory(
-            run_id=f"{instance.instance_id}-{uuid.uuid4().hex[:8]}",
+            run_id=run_id or f"{instance.instance_id}-{uuid.uuid4().hex[:8]}",
             benchmark=instance.benchmark,
             instance_id=instance.instance_id,
             config={"agent": self.config.model_dump(), "localizer": self.localizer.name}
             | (run_config or {}),
         )
+        trajectory.set_listener(on_step)
         started = time.monotonic()
         sandbox = self.sandbox_factory(instance)
         try:
