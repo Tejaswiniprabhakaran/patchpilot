@@ -1,0 +1,2 @@
+config,benchmark,status,source,wall_s_mean,wall_s_median,llm_calls_mean,llm_calls_median,prompt_tokens_mean,completion_tokens_mean,attempts_used_mean
+B0,quixbugs,incomplete (16 instances so far),results/B0/quixbugs.jsonl,563.34,515.11,3.38,3.5,7575.38,987.69,2.12

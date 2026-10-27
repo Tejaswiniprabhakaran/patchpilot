@@ -1,0 +1,11 @@
+benchmark,question,a,b,status
+quixbugs,RQ2: trained ranker vs LLM search (base model),B0,E1,TODO: needs both experiments complete
+quixbugs,RQ3: fine-tuned vs base model (LLM search),B0,E2,TODO: needs both experiments complete
+quixbugs,RQ3: fine-tuned vs base model (trained ranker),E1,E3,TODO: needs both experiments complete
+quixbugs,RQ1: full system vs baseline,B0,E3,TODO: needs both experiments complete
+quixbugs,RQ4: retries with feedback (3 attempts) vs 1 attempt,E4,E3,TODO: needs both experiments complete
+swebench-lite,RQ2: trained ranker vs LLM search (base model),B0,E1,TODO: needs both experiments complete
+swebench-lite,RQ3: fine-tuned vs base model (LLM search),B0,E2,TODO: needs both experiments complete
+swebench-lite,RQ3: fine-tuned vs base model (trained ranker),E1,E3,TODO: needs both experiments complete
+swebench-lite,RQ1: full system vs baseline,B0,E3,TODO: needs both experiments complete
+swebench-lite,RQ4: retries with feedback (3 attempts) vs 1 attempt,E4,E3,TODO: needs both experiments complete
