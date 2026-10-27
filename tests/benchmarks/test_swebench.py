@@ -61,6 +61,17 @@ def test_to_instance_uses_official_eval_script_and_does_not_double_apply_test_pa
     assert instance.setup_files == {swebench.EVAL_SCRIPT_PATH: "#!/bin/bash\necho run\n"}
     assert instance.test_command == f"bash {swebench.EVAL_SCRIPT_PATH}"
     assert instance.log_parser == "swebench"
+    assert instance.agent_test_patch == ROW["test_patch"]
+    assert instance.protected_paths == ("test_x.py",)
+
+
+def test_patched_paths_reads_diff_headers_and_skips_dev_null() -> None:
+    diff = (
+        "--- a/tests/a.py\n+++ b/tests/a.py\n@@ -1 +1 @@\n"
+        "--- /dev/null\n+++ b/tests/new.py\n@@ -0,0 +1 @@\n"
+    )
+
+    assert swebench.patched_paths(diff) == ["tests/a.py", "tests/new.py"]
 
 
 @pytest.fixture

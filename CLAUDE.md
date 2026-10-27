@@ -25,6 +25,22 @@ evaluated on SWE-bench Lite (50-instance seeded subset) and QuixBugs.
 8. Every major component gets `docs/explained/<component>.md` in plain English.
 9. Deviations from the prescribed stack are recorded in `docs/decisions.md`.
 
+## Resource rules (decisions D14) — PatchPilot is a resume project; never affect other projects
+
+- C: free space stays >= 20 GB; PatchPilot total < 10 GB (Docker images count). Check and report
+  sizes before any big download/build/pull; delete temp data once extracted; `--depth 1` clones.
+- Docker: touch only `patchpilot/*`, PatchPilot-pulled `swebench/*` images and
+  `patchpilot.sandbox` containers, by exact name. NEVER `docker system prune`,
+  `docker image prune -a`, `docker volume prune`, `docker compose down -v`. Never stop/change
+  `meridian-*`, `novakart-*`, `flaglens-*`. Never change Docker Desktop settings. If Docker is
+  down (stale sockets after unclean shutdown), tell the owner instead of fixing settings.
+- Never bind ports 7100-7123, 7201-7203, 9094, 9100, 9101, 9201, 27117, 5435, 6380, 3307,
+  3001-3003, 4001-4023, 8081-8083, 5433, 5000, 5001, 5434.
+- One heavy job at a time, Below Normal priority; check the eval is not already running.
+  Long jobs run detached via `scripts/run_detached.ps1`.
+- Never edit, run or commit anything in `C:\dev\meridian`, `C:\devlaglens` or the NovaKart folder.
+- SWE-bench images: one at a time, deleted after use. Base and fine-tuned E4B never both in Ollama.
+
 ## Git workflow
 
 - `main` (stable) ← `develop` (integration) ← short-lived `feat/ fix/ exp/ docs/ data/ chore/`.
@@ -39,7 +55,13 @@ evaluated on SWE-bench Lite (50-instance seeded subset) and QuixBugs.
 - Python 3.11 venv at `.venv` (pip + venv; `uv` is not installed — see decisions.md).
 - Run tools as `.venv\Scripts\python.exe -m ruff|mypy|pytest`.
 - Docker Desktop (Linux containers). Ollama installed for local inference.
-- No GPU for training: notebooks in `notebooks/` run on Kaggle/Colab by the user (checkpoint).
+- No NVIDIA GPU (Intel Iris Xe, i5-1335U, 15.6 GB RAM). Training notebooks in `notebooks/` run on
+  Kaggle/Colab by the owner (checkpoint).
+- **Experiments are CPU-scale (decisions D12):** Gemma 4 E4B (base, later QLoRA-fine-tuned and
+  served as GGUF) in local Ollama; evaluation set = QuixBugs (40) + 10 SWE-bench Lite instances
+  (`configs/swebench_lite_subset_10.json`). Gemma 4 thinking is off (D10).
+- Docker Desktop's disk lives on `D:\DockerData`; SWE-bench images are kept, not pruned.
+- Commit gate: ruff check, ruff format, mypy, then **plain `pytest`** (as CI runs it).
 
 ## Commands
 

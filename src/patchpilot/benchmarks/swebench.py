@@ -36,6 +36,8 @@ IMAGE_NAMESPACE = "swebench"
 SUBSET_FILE = Path("configs/swebench_lite_subset_50.json")
 SUBSET_SEED = 42
 SUBSET_SIZE = 50
+SMALL_SUBSET_FILE = Path("configs/swebench_lite_subset_10.json")
+SMALL_SUBSET_SIZE = 10
 EVAL_SCRIPT_PATH = "/eval.sh"
 SHELL_PREFIX = "source /opt/miniconda3/bin/activate testbed"
 PULL_ATTEMPTS = 3
@@ -103,11 +105,25 @@ def to_instance(row: dict[str, Any], spec: Any) -> BenchmarkInstance:
         gold_patch=row["patch"],
         # The official eval script applies the test patch itself, so it is not applied twice.
         test_patch="",
+        agent_test_patch=row["test_patch"],
+        protected_paths=tuple(patched_paths(row["test_patch"])),
         setup_files={EVAL_SCRIPT_PATH: spec.eval_script},
         log_parser="swebench",
         test_timeout_s=1800,
         memory="4g",
     )
+
+
+def patched_paths(diff: str) -> list[str]:
+    """Files touched by a unified diff (from its ``+++ b/...`` / ``--- a/...`` headers)."""
+    paths: list[str] = []
+    for line in diff.splitlines():
+        for prefix in ("+++ b/", "--- a/"):
+            if line.startswith(prefix):
+                path = line[len(prefix) :].strip()
+                if path not in paths:
+                    paths.append(path)
+    return paths
 
 
 def load_instance(instance_id: str) -> BenchmarkInstance:
@@ -135,6 +151,42 @@ def write_subset_file(path: Path = SUBSET_FILE) -> list[str]:
         "seed": SUBSET_SEED,
         "size": SUBSET_SIZE,
         "method": "random.Random(seed).sample(sorted(all_instance_ids), size), then sorted",
+        "instance_ids": ids,
+    }
+    path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8", newline="\n")
+    return ids
+
+
+def write_small_subset_file(
+    sanity_file: Path = Path("results/sanity_gold_patches.jsonl"),
+    source: Path = SUBSET_FILE,
+    path: Path = SMALL_SUBSET_FILE,
+    size: int = SMALL_SUBSET_SIZE,
+) -> list[str]:
+    """The CPU-scale evaluation set (decisions D12).
+
+    A seeded sample of ``size`` instances from the 50-instance subset, drawn only from instances
+    that passed the gold-patch sanity check in our sandbox.
+    """
+    valid = {
+        record["instance_id"]
+        for record in map(json.loads, sanity_file.read_text(encoding="utf-8").splitlines())
+        if record["benchmark"] == NAME and record["valid"]
+    }
+    pool = [i for i in subset_ids(source) if i in valid]
+    ids = make_subset(pool, size=size)
+    payload = {
+        "dataset": DATASET,
+        "revision": DATASET_REVISION,
+        "split": SPLIT,
+        "seed": SUBSET_SEED,
+        "size": size,
+        "source": str(source).replace("\\", "/"),
+        "pool_size": len(pool),
+        "method": (
+            "random.Random(seed).sample(sorted(valid ids of the 50-instance subset), size), "
+            "then sorted; valid = passed the gold-patch sanity check"
+        ),
         "instance_ids": ids,
     }
     path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8", newline="\n")

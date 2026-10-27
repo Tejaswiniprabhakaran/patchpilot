@@ -238,3 +238,15 @@ def test_truncate_keeps_head_and_tail() -> None:
     assert short.endswith("C" * 30)
     assert "110 characters omitted" in short
     assert _truncate("tiny", 40) == "tiny"
+
+
+def test_diff_excludes_protected_paths_and_is_not_truncated() -> None:
+    big = b"+" + b"x" * 50_000
+    sandbox, _, container = make_sandbox([(0, big)], limits=SandboxLimits(max_output_chars=100))
+    sandbox.start()
+
+    diff = sandbox.diff(exclude=("tests/", "conftest.py"))
+
+    script = container.exec_run.call_args.args[0][6]
+    assert script.endswith("-- . ':(exclude)tests/' ':(exclude)conftest.py'")
+    assert len(diff) == len(big)

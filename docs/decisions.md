@@ -79,6 +79,44 @@ NVIDIA GPU (Intel Iris Xe, i5-1335U, 15.6 GB RAM), so a small model is needed fo
 **Open:** where the 12B model runs during experiments is decided after measuring local CPU speed
 (`results/llm_speed_cpu.jsonl`).
 
+## D8 — The agent sees the failing test (test-guided repair) (2026-10-01)
+
+**Decision:** at the start of a run the instance's test patch is applied, so the agent can read and
+run the failing test, and the retry loop uses its output as feedback.
+
+**Why:** the brief describes an agent that "reads a failing test" and a GitHub bot that reacts
+when tests fail on a pull request; in both, the failing test exists. Grading still uses the
+official eval script (which resets test files before applying the test patch), and the agent may
+not edit test files, so a fix cannot come from changing the test.
+
+**Consequence:** SWE-bench numbers from this project are **not comparable** to the public
+leaderboard, where the tests are hidden. This is stated next to every SWE-bench result.
+
+## D9 — Experiment trajectories are committed, gzipped (2026-10-01)
+
+**Decision:** `patchpilot eval` writes every trajectory to
+`results/<experiment>/trajectories/<run_id>.json.gz`; ad-hoc `patchpilot fix` runs go to the
+ignored `runs/` folder.
+
+**Why:** the failure analysis (A5), the dashboard and the report's case studies all need the full
+trajectories, and the "every number traceable to results/" rule means they must be in the repo.
+Long step outputs are clipped at 20,000 characters and gzip keeps each run small.
+
+## D10 — Gemma 4 "thinking" is switched off (2026-10-01)
+
+**Measured:** on the first real run (`runs/gcd-c93b6284.json`, QuixBugs `gcd`, Gemma 4 E4B) the
+localization call and the first repair call returned an empty answer: the model spent the whole
+output budget on hidden reasoning (`finish_reason: length`). Replaying the same localization prompt
+with a 512-token limit: default settings gave an empty answer after 512 tokens (1,578 characters
+of reasoning); with `reasoning_effort: none` the model gave the correct JSON in 43 tokens.
+
+**Decision:** all configs set `llm.reasoning_effort: none`. Thinking roughly multiplies output
+tokens, which this CPU-bound setup cannot afford, and an answer cut off mid-thought is worthless
+to the agent. Thinking on/off could be added as an extra ablation later if time allows.
+
+**Also fixed from the same run:** the model copied the displayed line numbers into its SEARCH
+blocks; the parser now strips them, and "not found" feedback shows the closest real lines.
+
 ## D11 — Instances whose gold patch fails in the network-off sandbox are excluded from scoring (2026-10-01)
 
 **Measured** (`results/sanity_gold_patches.jsonl`, summary in `results/sanity_summary.csv`):
@@ -95,3 +133,71 @@ documented.
 **Rejected:** enabling the network for this instance (breaks the security rule for untrusted
 code); replacing it with another instance (would change a seeded, documented sample after seeing
 results of a check).
+
+## D12 — CPU-scale experiments: Gemma 4 E4B on the laptop, smaller evaluation set (2026-10-01)
+
+**Measured** (`results/llm_speed_cpu.jsonl`, Gemma 4 E4B, Ollama, laptop CPU, 256 output tokens):
+prompt processing 14.4 / 19.4 / 30.3 tokens/s and generation 5.3 / 0.5 / 0.8 tokens/s for
+prompts of 1,102 / 4,412 / 8,950 tokens; 127 / 712 / 621 s per call. (25 Docker containers of
+another project were running during the measurement.)
+
+**Decision (owner's choice, replaces the "12B for reported results" part of D7):**
+- Every reported experiment uses **base or fine-tuned Gemma 4 E4B** served locally by Ollama.
+- QLoRA fine-tuning still runs on a free Kaggle GPU (training needs a GPU) but targets E4B; the
+  adapter is merged, converted to GGUF and served locally.
+- Evaluation set: **QuixBugs (40)** + **10 SWE-bench Lite instances**
+  (`configs/swebench_lite_subset_10.json`: seed 42, sampled from the 49 instances of the 50-subset
+  that passed the gold-patch sanity check).
+- E4 (1 attempt) and E5 (1/2/3/5 attempts) are read from E3's 5-attempt trajectories instead of
+  separate runs. The agent stops at its first success and runs at temperature 0 with a fixed seed,
+  so "resolved within k attempts" of the 5-attempt run is what a k-attempt run would produce. This
+  assumption is checked by re-running a sample with `max_attempts: 1` and comparing.
+
+**Why:** at the measured speeds an agent call costs minutes; ~530 runs at 12B scale would take
+far longer than the project allows on this laptop. The owner preferred a fully local setup over
+renting or scheduling remote GPU time.
+
+**Consequences, stated in the report:** results are for a small (4-billion-effective-parameter)
+model; the SWE-bench sample is small, so per-config differences there will rarely be
+statistically significant and QuixBugs carries most of the statistical power.
+
+## D13 — Infrastructure stalls are re-run once, by a fixed rule (2026-10-02)
+
+**Observed:** in B0, `breadth_first_search` spent 3,799 s on one model call with a 1,623-token
+prompt and a 76-token answer (comparable calls take minutes), most likely because the laptop
+slept; the instance's one-hour budget ran out before any repair attempt.
+
+**Rule (decided before looking at which instances it affects):** a result row is an
+infrastructure failure if the run ended with a model-server error or any single model call took
+longer than 1,800 s. Such rows are moved to `results/<exp>/infra_failures.jsonl` (trajectories
+kept) and the instance is run again **once**; a second infrastructure failure stays in the
+results as an environment error. The rule ignores whether the bug was fixed, so it cannot favour
+any configuration. The model client timeout is 1,800 s with no silent retries, and the session
+keeps the laptop awake during experiments. Script: `scripts/requeue_infra_failures.py`.
+
+## D14 — Resource limits: PatchPilot must never affect the owner's other projects (2026-10-02)
+
+PatchPilot shares the laptop with the owner's main projects (FlagLens, NovaKart, Meridian).
+Owner's rules, now binding for every session:
+
+- C: keeps at least 20 GB free; PatchPilot uses under 10 GB in total (Docker images included).
+  Sizes are checked and reported before any large download, build or image pull; temporary data
+  is deleted as soon as it has been extracted; clones are shallow (`--depth 1`).
+- Docker: only `patchpilot/*` and PatchPilot-pulled `swebench/*` images and `patchpilot.sandbox`
+  containers are ever touched, deleted by exact name. No `docker system prune`,
+  `docker image prune -a`, `docker volume prune` or `docker compose down -v`; other projects'
+  containers are never stopped or changed; Docker Desktop settings are never changed.
+- Reserved ports that PatchPilot must never bind: 7100-7123, 7201-7203, 9094, 9100, 9101, 9201,
+  27117, 5435, 6380, 3307, 3001-3003, 4001-4023, 8081-8083, 5433, 5000, 5001, 5434.
+- One heavy job at a time, at Below Normal priority; never two copies of the same evaluation.
+
+**Consequences for the design (replaces the "keep images" update in D5):**
+- SWE-bench images are pulled **one at a time**, used for every pending configuration, then
+  deleted (`pulled_image(prune=True)`). About 4-5 GB is in use only while one image is active.
+- The base and the fine-tuned Gemma 4 E4B (about 6 GB each in Ollama) are never installed at the
+  same time: base-model experiments (B0, E1) run first, then the base model is removed before
+  the fine-tuned one is loaded.
+
+**Cleanup on 2026-10-02:** 50 `swebench/*` images and `python:3.11-slim` were deleted by name
+(Docker image total 90.3 GB -> 18.0 GB), two exited sandbox containers removed, pip cache purged
+(2.5 GB). Every other project's image and container was verified unchanged afterwards.
