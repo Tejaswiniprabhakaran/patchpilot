@@ -42,6 +42,9 @@ EVAL_SCRIPT_PATH = "/eval.sh"
 SHELL_PREFIX = "source /opt/miniconda3/bin/activate testbed"
 PULL_ATTEMPTS = 3
 PULL_RETRY_DELAY_S = 10
+# Deleting a multi-GB image on Docker Desktop can take minutes; the Docker client's default 60 s
+# read timeout once crashed a whole B0 run during cleanup and lost the finished instance.
+DOCKER_TIMEOUT_S = 900
 
 _STATUS = {
     "PASSED": TestStatus.PASSED,
@@ -245,7 +248,7 @@ def pulled_image(image: str, prune: bool = True, client: Any = None) -> Iterator
     """Make sure ``image`` is present; remove it afterwards if we pulled it (decisions.md D5)."""
     import docker
 
-    client = client or docker.from_env()
+    client = client or docker.from_env(timeout=DOCKER_TIMEOUT_S)
     pulled = False
     try:
         client.images.get(image)
@@ -256,5 +259,13 @@ def pulled_image(image: str, prune: bool = True, client: Any = None) -> Iterator
         yield image
     finally:
         if prune and pulled:
-            with contextlib.suppress(docker.errors.APIError):
-                client.images.remove(image, force=True)
+            _remove_image(client, image)
+
+
+def _remove_image(client: Any, image: str) -> None:
+    """Delete ``image``. A slow or failed delete is reported, never raised: an exception here
+    would replace the result of the run that just finished."""
+    try:
+        client.images.remove(image, force=True)
+    except Exception as error:  # Docker API errors, but also request timeouts
+        print(f"warning: could not remove image {image}: {error!r}", file=sys.stderr, flush=True)
