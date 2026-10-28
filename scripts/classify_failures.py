@@ -19,7 +19,7 @@ def main() -> None:
     parser.add_argument(
         "--judge", action="store_true", help="ask the LLM judge about uncertain cases"
     )
-    parser.add_argument("--model", default="gemma4-e4b-16k")
+    parser.add_argument("--model", default="gemma4-e4b-32k")
     parser.add_argument("--base-url", default="http://localhost:11434/v1")
     args = parser.parse_args()
 
