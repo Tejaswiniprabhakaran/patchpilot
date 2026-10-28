@@ -216,3 +216,25 @@ On the smoke build this kept 123 of 300 instances, with only 13 dropped for leng
 **Why:** the fine-tuned model is evaluated on Lite-shaped and QuixBugs fixes, a T4 cannot train on
 very long sequences, and dropping by shape is principled where dropping by length alone would
 silently remove the hardest examples.
+
+## D17 — The 16K context window is set in the Ollama model and checked before every run (2026-10-28)
+
+**Found:** Ollama's OpenAI-compatible API ignores the per-request `num_ctx` the client sent, so
+every B0 call so far ran with Ollama's default 4,096-token window instead of the configured
+16,384 (Ollama 0.40.11 server log: `n_ctx_slot = 4096`). In the first 19 B0 QuixBugs rows no
+prompt was cut (largest prompt: 3,869 tokens), but 5 of 63 model calls, in 4 runs
+(find_first_in_sorted, hanoi, kth, lis), filled the window, so the server ended those answers
+early. Longer SWE-bench prompts would have been cut from the front.
+
+**Decision:** the window is set in the model itself. `gemma4-e4b-16k` is `gemma4:e4b` (same
+weight files and quantization) with `PARAMETER num_ctx 16384` (`configs/ollama/`), and every
+experiment and the LLM judge use it from now on. `patchpilot eval` asks the Ollama server for the
+model's window (`/api/show`) and refuses to start if it is smaller than `context_tokens`. The 4
+affected B0 rows are re-run once through the D13 mechanism
+(`requeue_infra_failures.py --context-window 4096`), a rule that ignores whether the bug was fixed
+(one of the 4 had been resolved). The other B0 rows are kept: none of their calls reached the
+window, so the larger window does not change their computation. Each row records the model name
+it ran with.
+
+**Why:** a silent cap on the context is an infrastructure defect, not agent behaviour. Fixing it
+in the server's model and checking it automatically means it cannot come back unnoticed.

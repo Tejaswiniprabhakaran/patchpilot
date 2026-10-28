@@ -19,17 +19,18 @@ def main() -> None:
     parser.add_argument(
         "--judge", action="store_true", help="ask the LLM judge about uncertain cases"
     )
-    parser.add_argument("--model", default="gemma4:e4b")
+    parser.add_argument("--model", default="gemma4-e4b-16k")
     parser.add_argument("--base-url", default="http://localhost:11434/v1")
     args = parser.parse_args()
 
     llm = None
     if args.judge:
         from patchpilot.llm import LLMConfig, OpenAICompatibleClient
+        from patchpilot.llm.client import check_context_window
 
-        llm = OpenAICompatibleClient(
-            LLMConfig(model=args.model, base_url=args.base_url, reasoning_effort="none")
-        )
+        config = LLMConfig(model=args.model, base_url=args.base_url, reasoning_effort="none")
+        check_context_window(config)  # judge prompts are long (decisions D17)
+        llm = OpenAICompatibleClient(config)
     labels = classify_all(llm=llm)
     write_jsonl(OUT / "failure_labels.jsonl", labels)
     rows = taxonomy(labels)

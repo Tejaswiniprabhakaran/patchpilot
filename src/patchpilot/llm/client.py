@@ -47,7 +47,9 @@ class LLMConfig(BaseModel):
     seed: int | None = 42
     # A call taking longer than this is treated as an infrastructure stall (decisions D13).
     timeout_s: float = 1800.0
-    # Ollama ignores the OpenAI-style context setting; this is passed through as num_ctx.
+    # Context window the run needs. Ollama's OpenAI-compatible API cannot set it per request, so
+    # the Ollama model itself is created with it (configs/ollama/); `patchpilot eval` refuses to
+    # start when the server's window is smaller (decisions D17).
     context_tokens: int | None = 16384
     # Passed to the server as `reasoning_effort` when set, e.g. "none" to switch thinking off.
     reasoning_effort: str | None = None
@@ -105,8 +107,6 @@ class OpenAICompatibleClient:
 
     def complete(self, messages: list[Message], *, max_tokens: int | None = None) -> Completion:
         extra: dict[str, Any] = {}
-        if self.config.context_tokens:
-            extra["options"] = {"num_ctx": self.config.context_tokens}
         if self.config.reasoning_effort:
             extra["reasoning_effort"] = self.config.reasoning_effort
         started = time.monotonic()
@@ -132,6 +132,48 @@ class OpenAICompatibleClient:
         )
         self.usage.record(completion)
         return completion
+
+
+OLLAMA_DEFAULT_CONTEXT = 4096
+
+
+class ContextWindowError(RuntimeError):
+    """The model server would silently cut prompts that the experiment needs to send whole."""
+
+
+def ollama_context_window(base_url: str, model: str, timeout_s: float = 10.0) -> int | None:
+    """Context window an Ollama server runs ``model`` with; None if the server is not Ollama.
+
+    Ollama uses the model's ``num_ctx`` parameter, or its 4,096-token default when the model does
+    not set one; requests through the OpenAI-compatible API cannot change it (decisions D17).
+    """
+    import httpx
+
+    root = base_url.rstrip("/").removesuffix("/v1")
+    try:
+        response = httpx.post(f"{root}/api/show", json={"model": model}, timeout=timeout_s)
+        data = response.json() if response.status_code == 200 else None
+    except (httpx.HTTPError, ValueError):
+        return None
+    if not isinstance(data, dict) or "modelfile" not in data:
+        return None
+    for line in str(data.get("parameters", "")).splitlines():
+        name, _, value = line.strip().partition(" ")
+        if name == "num_ctx" and value.strip().isdigit():
+            return int(value.strip())
+    return OLLAMA_DEFAULT_CONTEXT
+
+
+def check_context_window(config: LLMConfig, window_of: Any = ollama_context_window) -> None:
+    """Refuse to run when the server's context window is smaller than the run needs."""
+    if not config.context_tokens:
+        return
+    window = window_of(config.base_url, config.model)
+    if window is not None and window < config.context_tokens:
+        raise ContextWindowError(
+            f"{config.model} runs with a {window}-token context window, but the config needs "
+            f"{config.context_tokens}. Create the model from configs/ollama/ (decisions D17)."
+        )
 
 
 def _reasoning_text(message: Any) -> str:
