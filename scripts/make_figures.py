@@ -148,13 +148,23 @@ def save(fig: Any, out: Path, name: str, source: str) -> Path:
 # ---------------------------------------------------------------------- figures
 
 
+def localization_runs() -> tuple[list[Path], list[dict[str, Any]]]:
+    """The held-out runs to compare: the seeded sample when two or more methods were evaluated on
+    it (the same instances for every method), otherwise the full test split."""
+    for pattern in ("localization/heldout_*_test_sample*.json", "localization/heldout_*_test.json"):
+        files = sorted(RESULTS.glob(pattern))
+        runs = [json.loads(p.read_text(encoding="utf-8")) for p in files]
+        keep = [(p, r) for p, r in zip(files, runs, strict=True) if r["method"] in METHOD_COLOUR]
+        if len(keep) >= 2 or (keep and pattern.endswith("_test.json")):
+            return [p for p, _ in keep], [r for _, r in keep]
+    return [], []
+
+
 def fig_localization_topk(out: Path) -> Path | None:
     """Top-k accuracy on the held-out test repositories, per method; files and functions."""
-    files = sorted(RESULTS.glob("localization/heldout_*_test.json"))
-    runs = [json.loads(p.read_text(encoding="utf-8")) for p in files]
-    runs = [r for r in runs if r["method"] in METHOD_COLOUR]
+    files, runs = localization_runs()
     if not runs:
-        print("skip localization_topk: no results/localization/heldout_*_test.json yet")
+        print("skip localization_topk: no results/localization/heldout_*_test*.json yet")
         return None
     runs.sort(key=lambda r: list(METHOD_COLOUR).index(r["method"]))
     ks = ["top1", "top3", "top5"]
@@ -191,6 +201,7 @@ def fig_localization_topk(out: Path) -> Path | None:
         )
     fig.suptitle(
         "Fault localization on held-out repositories"
+        + (" (seeded sample, same instances for every method)" if runs[0].get("sample") else "")
         + ("" if len(runs) > 1 else f": {METHOD_LABEL[runs[0]['method']]}"),
         x=0.01,
         ha="left",
@@ -260,36 +271,57 @@ def fig_resolve_rates(out: Path) -> Path | None:
 
 
 def fig_retries_curve(out: Path) -> Path | None:
+    """Resolved within k attempts: one panel per benchmark, one line per configuration."""
     curve = build_tables()["retries_curve"]
     if not curve:
-        print("skip retries_curve: needs E3 results (TODO: not yet run)")
+        print("skip retries_curve: needs B0, E1 or E3 results (TODO: not yet run)")
         return None
-    fig, ax = plt.subplots(figsize=(6.2, 3.4))
     benchmarks = [b for b in BENCH_LABEL if any(c["benchmark"] == b for c in curve)]
-    for benchmark in benchmarks:
-        part = [c for c in curve if c["benchmark"] == benchmark]
-        xs, ys = [c["attempts"] for c in part], [c["rate"] for c in part]
-        colour = SERIES_COLOUR[benchmark]
-        ax.plot(xs, ys, color=colour, lw=2, solid_joinstyle="round", solid_capstyle="round")
-        ax.scatter(xs, ys, s=36, color=colour, edgecolors=SURFACE, linewidths=2, zorder=3)
-        ax.annotate(
-            f"{BENCH_LABEL[benchmark]} {ys[-1]:.0%}",
-            (xs[-1], ys[-1]),
-            xytext=(6, 0),
-            textcoords="offset points",
-            va="center",
-            color=INK_2,
-            fontsize=8.5,
-        )
-    ax.set_xticks([1, 2, 3, 5])
-    ax.set_xlabel("maximum attempts")
-    ax.set_ylim(0, 1)
-    ax.yaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(1.0, decimals=0))
-    if len(benchmarks) > 1:
-        ax.legend([BENCH_LABEL[b] for b in benchmarks], loc="lower right")
-    ax.set_title("Resolved within k attempts (E3)", loc="left")
-    fig.tight_layout(rect=(0, 0.05, 1, 1))
-    return save(fig, out, "retries_curve", "results/E3/<benchmark>.jsonl")
+    configs = list(dict.fromkeys(c["config"] for c in curve))
+    fig, axes = plt.subplots(
+        1, len(benchmarks), figsize=(4.2 * len(benchmarks), 3.4), squeeze=False
+    )
+    for ax, benchmark in zip(axes[0], benchmarks, strict=True):
+        for i, config in enumerate(configs):
+            part = [c for c in curve if c["benchmark"] == benchmark and c["config"] == config]
+            if not part:
+                continue
+            xs, ys = [c["attempts"] for c in part], [c["rate"] for c in part]
+            colour = SLOTS[i % len(SLOTS)]
+            ax.plot(xs, ys, color=colour, lw=2, solid_joinstyle="round", solid_capstyle="round")
+            ax.scatter(xs, ys, s=36, color=colour, edgecolors=SURFACE, linewidths=2, zorder=3)
+            ax.annotate(
+                f"{config} {part[-1]['resolved']}/{part[-1]['n']}",
+                (xs[-1], ys[-1]),
+                xytext=(6, 0),
+                textcoords="offset points",
+                va="center",
+                color=INK_2,
+                fontsize=8.5,
+            )
+        ks = sorted({c["attempts"] for c in curve if c["benchmark"] == benchmark})
+        ax.set_xticks(ks)
+        ax.set_xlim(min(ks) - 0.3, max(ks) + 0.9)
+        ax.set_xlabel("maximum attempts")
+        ax.set_ylim(0, 1)
+        ax.yaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(1.0, decimals=0))
+        ax.set_title(BENCH_LABEL[benchmark], loc="left")
+    if len(configs) > 1:
+        handles = [
+            Rectangle((0, 0), 1, 1, color=SLOTS[i % len(SLOTS)]) for i in range(len(configs))
+        ]
+        fig.legend(handles, configs, loc="upper right", ncols=len(configs))
+    fig.suptitle(
+        "Resolved within k attempts (retries with test feedback)",
+        x=0.01,
+        ha="left",
+        color=INK,
+        fontsize=12,
+        fontweight="bold",
+    )
+    fig.tight_layout(rect=(0, 0.05, 1, 0.92))
+    sources = sorted({c["source"] for c in curve})
+    return save(fig, out, "retries_curve", ", ".join(sources))
 
 
 def fig_llm_speed(out: Path) -> Path | None:
@@ -380,7 +412,7 @@ def main() -> None:
         args.out,
         "loss_fault_localization",
         RESULTS / "training/fault_localization_log.json",
-        "Cross-encoder fine-tuning loss",
+        "Cross-encoder fine-tuning loss (CPU, D16)",
     )
     fig_training_loss(
         args.out,
