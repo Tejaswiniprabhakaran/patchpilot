@@ -101,7 +101,11 @@ def test_build_tables_reports_todo_and_tests_only_complete_pairs(tmp_path: Path)
     assert rates[("B0", "quixbugs")]["resolved"] == 10
     assert rates[("E1", "quixbugs")]["resolved"] == 16
     assert rates[("E2", "quixbugs")]["status"] == "TODO: not yet run"
-    rq2 = next(t for t in tables["paired_tests"] if t["benchmark"] == "quixbugs" and t["b"] == "E1")
+    rq2 = next(
+        t
+        for t in tables["paired_tests"]
+        if t["benchmark"] == "quixbugs" and (t["a"], t["b"]) == ("B0", "E1")
+    )
     assert rq2["status"] == "done"
     assert (rq2["a_only"], rq2["b_only"]) == (0, 6)
     assert rq2["mcnemar_exact_p"] == pytest.approx(0.0312, abs=1e-4)
@@ -141,6 +145,35 @@ def test_derived_configs_cap_attempts(tmp_path: Path) -> None:
     curve = {
         c["attempts"]: c["resolved"]
         for c in tables["retries_curve"]
-        if c["benchmark"] == "quixbugs"
+        if c["benchmark"] == "quixbugs" and c["config"] == "E3"
     }
     assert curve == {1: 2, 2: 2, 3: 4, 5: 4}
+
+
+def test_retries_are_measured_on_the_base_model_runs(tmp_path: Path) -> None:
+    sanity = tmp_path / "sanity.jsonl"
+    sanity.write_text("")
+    # 40 instances: 6 fixed at the first attempt, 4 more only after a retry.
+    rows = [
+        {
+            "instance_id": f"q{i}",
+            "resolved": i < 10,
+            "best_attempt": 1 if i < 6 else 2,
+            "attempts_used": 1 if i < 6 else 2,
+        }
+        for i in range(40)
+    ]
+    write_rows(tmp_path, "B0", "quixbugs", rows)
+
+    tables = build_tables(tmp_path, sanity)
+
+    rates = {(r["config"], r["benchmark"]): r for r in tables["resolve_rates"]}
+    assert (rates[("B0@1", "quixbugs")]["resolved"], rates[("B0", "quixbugs")]["resolved"]) == (
+        6,
+        10,
+    )
+    rq4 = next(t for t in tables["paired_tests"] if (t["a"], t["b"]) == ("B0@1", "B0"))
+    assert rq4["status"] == "done" and (rq4["a_only"], rq4["b_only"]) == (0, 4)
+    curve = [(c["attempts"], c["resolved"]) for c in tables["retries_curve"] if c["config"] == "B0"]
+    assert curve == [(1, 6), (2, 10), (3, 10)]
+    assert "| B0 | quixbugs | 2 | 10/40 | 25.0% |" in markdown(tables)

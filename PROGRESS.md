@@ -7,9 +7,35 @@ Newest entry first. Each entry: what was done, what is next, open issues, result
 ```powershell
 # pause everything PatchPilot runs (other projects are never touched)
 powershell -File C:\dev\patchpilot\scripts\pause_patchpilot.ps1
-# resume B0 on QuixBugs (skips finished instances; refuses to start a second copy)
-cd C:\dev\patchpilot; powershell -File scripts/run_detached.ps1 -Name B0_quixbugs eval --config configs/exp_baseline.yaml --benchmark quixbugs
+# resume: the pipeline skips finished steps and resumes evaluations from saved rows
+cd C:\dev\patchpilot; powershell -File scripts/run_pipeline.ps1 -Detach
+# progress
+Get-Content C:\dev\patchpilot\logs\pipeline.log -Tail 20
 ```
+
+## 2026-10-28 (later) — Ranker training set up, pipeline running, report generated
+
+**Done (PRs #29–#31 merged; report branch in review)**
+- Found and fixed a context-window defect (D17, PRs #29, #30): Ollama's OpenAI API ignored
+  `num_ctx`, so B0 ran with 4,096 tokens and 5 of 63 calls filled it. Now `gemma4-e4b-32k`, a
+  pre-run check, and the 4 affected B0 rows re-run (`find_first_in_sorted` went from not resolved
+  to resolved on its re-run).
+- CPU ranker training, E1 config, localization evaluation on a seeded sample, and
+  `scripts/run_pipeline.ps1` (PR #31). The pipeline started at 13:12 and runs: B0 QuixBugs, B0
+  SWE-bench, ranker training, localization evaluation, E1, summaries, figures, taxonomy, report.
+- GitHub bot demo: `patchpilot-demo#1`, correct patch in 116 s at attempt 1.
+- Report builder and screenshots; the report is now a technical report (no university front
+  matter, since PatchPilot is a resume project).
+
+**Expected run time** (laptop CPU, measured speeds): B0 QuixBugs about 3 h more, B0 SWE-bench
+5–10 h, training 4 h, localization evaluation about 3 h, E1 10–15 h.
+
+**After the pipeline finishes**: commit `results/` and the rebuilt report from `C:\dev\patchpilot`
+(a results branch and pull request), check the numbers, tag a release.
+
+**Still needs the owner**: notebook 02 on a GPU for the fine-tuned model (E2–E4); 30 blind manual
+labels (`scripts/label_failures.py`) for the classifier agreement; optional Hub upload of the
+CPU-trained ranker.
 
 ## 2026-10-28 — All software built; experiments and training still pending
 

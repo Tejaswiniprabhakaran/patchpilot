@@ -33,7 +33,9 @@ class Config:
 
 CONFIGS = [
     Config("B0", "B0", "LLM-search localization, base Gemma 4 E4B, 3 attempts"),
+    Config("B0", "B0@1", "B0 counted at its first attempt (no retries)", attempts=1),
     Config("E1", "E1", "trained ranker, base Gemma 4 E4B, 3 attempts"),
+    Config("E1", "E1@1", "E1 counted at its first attempt (no retries)", attempts=1),
     Config("E2", "E2", "LLM-search localization, fine-tuned Gemma 4 E4B, 3 attempts"),
     Config("E3", "E3", "trained ranker, fine-tuned Gemma 4 E4B, 3 attempts", attempts=3),
     Config("E3", "E4", "trained ranker, fine-tuned Gemma 4 E4B, 1 attempt", attempts=1),
@@ -44,9 +46,14 @@ COMPARISONS = [  # (a, b, research question)
     ("B0", "E2", "RQ3: fine-tuned vs base model (LLM search)"),
     ("E1", "E3", "RQ3: fine-tuned vs base model (trained ranker)"),
     ("B0", "E3", "RQ1: full system vs baseline"),
-    ("E4", "E3", "RQ4: retries with feedback (3 attempts) vs 1 attempt"),
+    ("B0@1", "B0", "RQ4: retries with feedback (3 attempts) vs 1 attempt (B0)"),
+    ("E1@1", "E1", "RQ4: retries with feedback (3 attempts) vs 1 attempt (E1)"),
+    ("E4", "E3", "RQ4: retries with feedback (3 attempts) vs 1 attempt (E3)"),
 ]
 RETRY_CURVE_K = (1, 2, 3, 5)
+# Runs whose "resolved within k attempts" curve is reported, and the k values shown. B0 and E1
+# stop at 3 attempts; E3 was planned with longer runs (E5).
+CURVE_K = {"B0": (1, 2, 3), "E1": (1, 2, 3), "E3": RETRY_CURVE_K}
 
 
 def outcome(config: Config, results: ExperimentResults) -> dict[str, bool]:
@@ -110,11 +117,12 @@ def build_tables(
                         )["mean"],
                     }
                 )
-            if config.experiment == "E3" and config.attempts == 3:
-                for k in RETRY_CURVE_K:
+            if config.label in CURVE_K and config.attempts in (None, 3):
+                for k in CURVE_K[config.label]:
                     within = resolved_within(res.rows.values(), k)
                     curve.append(
                         {
+                            "config": config.label,
                             "benchmark": benchmark,
                             "attempts": k,
                             "resolved": within.k,
@@ -226,14 +234,15 @@ def markdown(tables: dict[str, list[dict[str, Any]]]) -> str:
             cells = ("-", "-", "-", t["status"])
         lines.append(_row(t["benchmark"], t["question"], *cells))
 
-    lines += ["", "## Retries curve (E3, resolved within k attempts)", ""]
+    lines += ["", "## Retries curve (resolved within k attempts)", ""]
     if tables["retries_curve"]:
-        lines += [_row("Benchmark", "k", "Resolved", "Rate"), _row(*["---"] * 4)]
+        lines += [_row("Config", "Benchmark", "k", "Resolved", "Rate"), _row(*["---"] * 5)]
         for c in tables["retries_curve"]:
+            resolved = f"{c['resolved']}/{c['n']}"
             lines.append(
-                _row(c["benchmark"], c["attempts"], f"{c['resolved']}/{c['n']}", f"{c['rate']:.1%}")
+                _row(c["config"], c["benchmark"], c["attempts"], resolved, f"{c['rate']:.1%}")
             )
     else:
-        lines.append("TODO: not yet run (needs E3).")
+        lines.append("TODO: not yet run (needs B0, E1 or E3 results).")
     lines.append("")
     return "\n".join(lines)

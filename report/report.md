@@ -1,31 +1,35 @@
 ---
-title: "PatchPilot: An LLM Agent that Fixes Real Bugs with Trained Fault Localization, a Fine-Tuned Patch Generator and Sandboxed Verification"
-status: DRAFT — results chapters are filled in as experiments finish; every number cites its file in results/
+title: "PatchPilot"
+subtitle: "An open-model agent that fixes real bugs, with trained fault localization and sandboxed verification"
+kind: "Technical report"
+author: "Tejaswini Prabhakaran"
+repository: "https://github.com/Tejaswiniprabhakaran/patchpilot"
 ---
 
 <!--
-FRONT MATTER (to be completed with the owner's details before building the DOCX/PDF):
-title page, bonafide certificate, declaration, acknowledgement. Placeholders:
-[COLLEGE NAME] · [DEPARTMENT] · [GUIDE NAME, DESIGNATION] · [TEAM MEMBERS AND REGISTER NUMBERS] · [ACADEMIC YEAR]
+Source of the report. `python scripts/build_report.py` rewrites every "generated" section below from
+the files in results/ (results that do not exist yet appear as "TODO: not yet run"), then writes
+report/PatchPilot_report.docx and .pdf. Do not type numbers into the generated sections by hand.
 -->
 
 # Abstract
 
 Automated program repair aims to produce correct patches for real bugs with little human effort.
 Recent large language model (LLM) agents can resolve some real GitHub issues, but most rely on
-large proprietary models, retrieve code with ad-hoc search and are evaluated without a careful look
-at why they fail. This project builds **PatchPilot**, an end-to-end repair system that combines a
-*trained* fault-localization ranker, a *fine-tuned* open-weight patch generator (Google's Gemma 4
-E4B, adapted with QLoRA) and *sandboxed verification*: every candidate patch is tested inside a
-network-isolated Docker container, and failing attempts are retried with the test output as
-feedback. The system includes a command-line tool, a web dashboard, a GitHub bot that comments
-verified fixes on failing pull requests, and an evaluation harness on QuixBugs and a seeded subset
-of SWE-bench Lite with paired McNemar tests and an automatic failure taxonomy. Both training
-datasets are built from the SWE-bench training split with a leakage check that finds zero overlap
-with the evaluation set. On 1,212 held-out instances from repositories never seen in training, a
-BM25 baseline ranks the buggy function first in 25.8% of cases (Top-5: 52.9%), the bar the trained
-ranker must beat. TODO: final resolve rates, the effect of the trained ranker (RQ2), of fine-tuning
-(RQ3) and of retries (RQ4), and the failure taxonomy (RQ5) are reported once the experiments finish.
+large proprietary models, localize faults with ad-hoc search and report a single resolve rate
+without a careful account of why they fail. **PatchPilot** is an end-to-end repair system built
+around an open model that runs on a laptop CPU (Google's Gemma 4 E4B, served by Ollama), a
+*trained* fault-localization ranker (a UniXcoder cross-encoder that re-ranks BM25 candidates) and
+*sandboxed verification*: every candidate patch is tested inside a network-isolated Docker
+container, and failing attempts are retried with the test output as feedback. The system includes
+a command-line tool, a web dashboard, a GitHub bot that comments verified fixes on failing pull
+requests, and an evaluation harness on QuixBugs and a seeded subset of SWE-bench Lite with paired
+McNemar tests and an automatic failure taxonomy. Training data come from the SWE-bench training
+split, with a leakage check that finds zero overlap with the evaluation set.
+
+<!-- BEGIN generated:abstract -->
+**Results.** With base Gemma 4 E4B on a laptop CPU, the baseline (B0, LLM-search localization) resolved 9/16 (56.2%; run still in progress) on QuixBugs. Resolve rates with the trained ranker (E1): TODO: not yet run. Fault-localization accuracy of the trained ranker: TODO: not yet run. The QLoRA patch-generator pipeline (training data, notebook and model card) is complete but was not trained, because it needs a GPU, so the effect of fine-tuning (RQ3) remains open.
+<!-- END generated:abstract -->
 
 # Chapter 1 — Introduction
 
@@ -61,14 +65,16 @@ evaluation.
 3. A trained fault-localization ranker compared with BM25 and embedding retrieval.
 4. A QLoRA-fine-tuned Gemma 4 E4B patch generator compared with the base model.
 5. A rigorous evaluation with baselines, ablations and paired statistical tests, plus a failure
-   taxonomy checked against manual labels.
+   taxonomy.
 6. Product interfaces: CLI, dashboard and a GitHub pull-request bot.
 
 ## 1.5 Scope
 
 Python programs only; evaluation on QuixBugs (40 programs) and a seeded 10-instance subset of
-SWE-bench Lite drawn from 49 sanity-checked instances. All inference runs on a laptop CPU and all
-training on a free Kaggle GPU (decision D12 in `docs/decisions.md`).
+SWE-bench Lite drawn from 49 sanity-checked instances. All inference and the ranker's training run
+on a laptop CPU (decisions D12 and D16 in `docs/decisions.md`). The patch generator's QLoRA
+training (objective 4) is prepared for a free Kaggle GPU but was not run, so the comparisons that
+need the fine-tuned model stay open.
 
 ## 1.6 Research questions
 
@@ -134,14 +140,15 @@ base model, making fine-tuning of multi-billion-parameter models possible on a s
 | [13] | CodeBERT | 2020 | — | (encoder) | pre-trained bimodal | — | code search |
 | [14] | UniXcoder | 2022 | — | (encoder) | pre-trained, AST-aware | — | code search, more |
 | [16] | QLoRA | 2023 | — | — | 4-bit + LoRA fine-tuning | — | instruction tuning |
-| — | **PatchPilot** | 2026 | pipeline agent, test-feedback retries | **trained cross-encoder** over BM25 | **open Gemma 4 E4B + QLoRA**, on CPU | network-off Docker sandbox, official harness | QuixBugs + SWE-bench Lite subset, McNemar tests, failure taxonomy |
+| — | **PatchPilot** | 2026 | pipeline agent, test-feedback retries | **trained cross-encoder** over BM25 | **open Gemma 4 E4B on a CPU** (QLoRA prepared) | network-off Docker sandbox, official harness | QuixBugs + SWE-bench Lite subset, McNemar tests, failure taxonomy |
 
 ## 2.6 Research gap
 
 Existing agents mostly (i) rely on large proprietary models, (ii) localize with prompting rather than
 a trained, evaluated ranker, and (iii) report a single resolve rate without paired statistics or a
-systematic account of failures. PatchPilot isolates the contribution of a trained localizer and of
-fine-tuning with controlled ablations on an open model small enough for a laptop.
+systematic account of failures. PatchPilot isolates the contribution of a trained localizer, of
+retries and (when trained) of fine-tuning, with controlled ablations on an open model small enough
+for a laptop.
 
 # Chapter 3 — System Requirements
 
@@ -150,16 +157,17 @@ fine-tuning with controlled ablations on an open model small enough for a laptop
 | Item | Value |
 |---|---|
 | CPU / GPU | Intel Core i5-1335U (10 cores, 12 threads) / Intel Iris Xe, no CUDA GPU |
-| RAM | 15.6 GB (8 GB assigned to Docker Desktop) |
+| RAM | 15.6 GB, shared with Docker Desktop and the model server (about 8 GB for Gemma 4 E4B) |
 | Disk | Docker data on a separate drive; PatchPilot kept under 10 GB (decision D14) |
-| Training | free Kaggle notebook GPU (NVIDIA T4, 16 GB) |
+| Training | ranker: the same laptop CPU (D16); patch generator: notebook prepared for a free Kaggle T4 GPU (not run) |
 
 ## 3.2 Software
 
-Python 3.11; Docker Desktop (Linux containers); Ollama (Gemma 4 E4B, Q4_K_M); the official SWE-bench
-harness 4.1.0; transformers, peft, trl and bitsandbytes (training); rank-bm25, FAISS and
-sentence-transformers (retrieval); FastAPI, Jinja2 and Pygments (dashboard); Typer and Rich (CLI);
-pytest, ruff and mypy (quality); GitHub Actions (CI and the bot).
+Python 3.11; Docker Desktop (Linux containers); Ollama (Gemma 4 E4B, Q4_K_M, 32K-token context,
+D17); the official SWE-bench harness 4.1.0; transformers (ranker training), peft, trl and
+bitsandbytes (patch-generator notebook); rank-bm25, FAISS and sentence-transformers (retrieval);
+FastAPI, Jinja2 and Pygments (dashboard); Typer and Rich (CLI); pytest, ruff and mypy (quality);
+GitHub Actions (CI and the bot); python-docx and Microsoft Word (this report).
 
 ## 3.3 Functional requirements
 
@@ -175,16 +183,23 @@ pytest, ruff and mypy (quality); GitHub Actions (CI and the bot).
 
 Security (no network for untrusted code, bounded CPU/memory/processes, no host mounts);
 reproducibility (pinned dataset revisions, seeds, configs saved with results); honesty (every number
-traceable to `results/`); resource frugality (one heavy job at a time, below-normal priority);
-maintainability (strict typing, 172 unit tests, CI on every push).
+traceable to `results/`, and this report's result sections are generated from those files);
+resource frugality (one heavy job at a time, below-normal priority, never touching other projects'
+containers); maintainability (strict typing, unit tests, CI on every push).
 
 # Chapter 4 — System Design
 
 ## 4.1 Architecture
 
-The architecture diagram, the agent sequence diagram and the experiment data-flow diagram are in
-`docs/architecture.md` (Mermaid source). The central rule: repository code only runs inside the
-sandbox; every other component talks to it through a small API.
+The central rule: repository code only runs inside the sandbox; every other component talks to it
+through a small API. The diagrams below are rendered from the Mermaid source in
+`docs/architecture.md`.
+
+![Architecture: modules, the sandbox and the model server](figures/diagram_architecture.png)
+
+![One agent run: reproduce, localize, repair with test feedback, grade independently](figures/diagram_agent_loop.png)
+
+![Experiment data flow from configurations to the README, the report and the dashboard](figures/diagram_experiments.png)
 
 ## 4.2 Modules
 
@@ -196,7 +211,7 @@ sandbox; every other component talks to it through a small API.
 | `cli` | S3 | `fix`, `eval`, `show`, `dashboard` |
 | `bot`, `github_action` | S4 | pull-request bot |
 | `dashboard` | S5 | runs, trajectories, metrics, live demo |
-| tests, CI, typing | S6 | quality |
+| tests, CI, typing, pipeline | S6 | quality and unattended runs |
 | `localization` | A1, A3 | labels, BM25, embeddings, cross-encoder, ranker localizer |
 | `patchgen` + notebook 02 | A2 | fine-tuning data and QLoRA training |
 | `evaluation` | A4 | runner, scoring rules, statistics, tables, figures |
@@ -237,18 +252,58 @@ Each module's design, rationale and rejected alternatives are written up in `doc
 - **Agent (S2).** The model edits with SEARCH/REPLACE blocks; copied line numbers are stripped;
   Gemma 4's hidden "thinking" is switched off because it consumed the whole output budget in the
   first runs (decision D10). Every step is logged to a gzipped JSON trajectory.
+- **Model server (D17).** Ollama's OpenAI-compatible endpoint silently ignored the per-request
+  context size, so the first B0 runs had a 4,096-token window instead of the configured one; the
+  server's own log showed it (`n_ctx_slot = 4096`). The window is now set in an Ollama model
+  (`gemma4-e4b-32k`: the same weights with a 32,768-token window), `patchpilot eval` checks the
+  server's window before it starts, and the runs whose model calls had filled the window were
+  re-run by a fixed rule (Section 7.5).
 - **Localization (A1, A3).** Labels come from parsing the gold patch into edited lines and mapping
   them to functions with Python's `ast`. Files are represented by a signature skeleton, functions by
-  their source; the same views are built from the sandbox at run time.
+  their source; the same views are built from the sandbox at run time. The cross-encoder is trained
+  on the CPU (`scripts/train_ranker_cpu.py`, D16), and its sequence lengths travel with the model so
+  inference cuts texts exactly as training did.
 - **Patch generator (A2).** Training chats are exactly the agent's prompt; the target is the gold
   fix rewritten as SEARCH/REPLACE blocks, verified to reproduce `git apply`.
 - **Evaluation (A4).** Results are written per instance with the git commit; infrastructure stalls
   are re-run once by a fixed rule (D13); exact McNemar tests compare configurations only when both
-  are complete.
+  are complete. `scripts/run_pipeline.ps1` runs every remaining step unattended, one heavy job at a
+  time at below-normal priority, and can be paused and resumed.
 - **Failure analysis (A5).** Seven rule categories plus an LLM judge for uncertain cases; gold
   regions ignore docstrings and blank lines; a blind labelling tool measures agreement.
-- **Dashboard (S5) and bot (S4).** FastAPI pages over `results/`; the live page runs one fix at a
-  time. The bot builds its image from a pull request's tracked files and only comments.
+
+## 5.1 Interfaces
+
+The command line runs single fixes and whole experiments and prints any saved trajectory step by
+step:
+
+![`patchpilot show` on a resolved QuixBugs run](figures/cli_show.png)
+
+The dashboard (FastAPI, `patchpilot dashboard`) reads `results/` and `runs/`: the list of runs, each
+trajectory with its final diff, the metrics of every experiment, and a live "Try it" page that runs
+one fix at a time.
+
+![Dashboard: experiment runs](figures/dashboard_runs.png)
+
+![Dashboard: one trajectory with the final patch](figures/dashboard_trajectory.png)
+
+![Dashboard: metrics](figures/dashboard_metrics.png)
+
+![Dashboard: the live "Try it" page](figures/dashboard_try.png)
+
+## 5.2 The GitHub bot
+
+When a pull request's tests fail, the composite action in `github_action/` installs Ollama on the
+runner, builds a sandbox image from the pull request's tracked files and runs the agent. It only
+comments; it never pushes or merges.
+
+<!-- BEGIN generated:bot -->
+The bot was tried on a public demo repository: the pull request [Refactor basket_total loop](https://github.com/Tejaswiniprabhakaran/patchpilot-demo/pull/1) introduces an off-by-one bug into a working function. Its test job failed (7 s); the PatchPilot job then ran on a GitHub-hosted runner for 4.2 min (installing Ollama and the model included) and posted the comment shown below: a patch found with `gemma4:e4b` at attempt 1 in 116 s, with the test output before and after. Nothing was pushed or merged.
+
+Source: `results/bot_demo/patchpilot-demo-pr1.json`.
+
+![The bot's comment on the demo pull request](figures/bot_comment.png)
+<!-- END generated:bot -->
 
 # Chapter 6 — Datasets and Model Training
 
@@ -278,19 +333,28 @@ conda, spaCy, meson). Dataset cards: `docs/dataset_cards/`.
 
 ## 6.3 Training setup
 
-| | Fault-localization ranker | Patch generator |
+| | Fault-localization ranker (trained) | Patch generator (prepared, not trained) |
 |---|---|---|
 | Base model | `microsoft/unixcoder-base` (125M) | `google/gemma-4-E4B-it` |
 | Method | full fine-tuning, 2-class cross-encoder | QLoRA (4-bit NF4, LoRA r=16, α=32, dropout 0.05) |
-| Data | 113,396 pairs (37.8% positive) | 3,063 chats |
-| Length | 384 tokens | 3,072 tokens |
-| Optimisation | lr 2e-5, batch 32, 1 epoch, fp16 | lr 2e-4 cosine, batch 16, 1 epoch, paged 8-bit AdamW |
-| Hardware | Kaggle T4 | Kaggle T4 |
-| Loss curves | TODO: not yet run | TODO: not yet run |
+| Data | seeded sample of 2,000 training instances; all positives, 4 hard-negative files, 8 negative functions each | 3,063 chats |
+| Length | 256 tokens (bug report: 128) | 3,072 tokens |
+| Optimisation | lr 3e-5, batch 16, at most 1 epoch within a 4-hour budget, fp32 | lr 2e-4 cosine, batch 16, 1 epoch, paged 8-bit AdamW |
+| Hardware | laptop CPU (D16) | Kaggle T4 (notebook 02, needs the owner's account) |
+
+The full-scale GPU recipe for the ranker (all 113,396 pairs, 384 tokens) stays in notebook 01; the
+CPU run below is the model used in every reported result.
+
+## 6.4 Ranker training run
+
+<!-- BEGIN generated:training -->
+CPU training run of the ranker (D16): TODO: not yet run.
+<!-- END generated:training -->
 
 # Chapter 7 — Results and Discussion
 
-All tables state their source; `TODO: not yet run` marks results that do not exist yet.
+All tables state their source; `TODO: not yet run` marks results that do not exist yet. The result
+sections are regenerated from `results/` every time this report is built.
 
 ## 7.1 Benchmark validity (`results/sanity_summary.csv`)
 
@@ -302,73 +366,167 @@ All tables state their source; `TODO: not yet run` marks results that do not exi
 `psf__requests-1963` is excluded: 50 of its tests contact an external HTTP server and the sandbox
 has no network by design (D11).
 
-## 7.2 Inference cost on the laptop (`results/llm_speed_cpu.jsonl`, Figure `llm_speed_cpu.png`)
+## 7.2 Inference cost on the laptop (`results/llm_speed_cpu.jsonl`)
 
 Gemma 4 E4B processed 14.4–30.3 prompt tokens/s and generated 0.5–5.3 tokens/s for prompts of
 1,102–8,950 tokens (127–712 s per call), which is why experiments run at a small scale (D12).
 
-## 7.3 Fault localization (RQ2, part 1) (`results/localization/heldout_bm25_test.json`)
+![Gemma 4 E4B speed on the laptop CPU](figures/llm_speed_cpu.png)
 
-| Method | File Top-1 | File Top-5 | Function Top-1 | Function Top-3 | Function Top-5 | Function MRR |
+## 7.3 Fault localization (RQ2, part 1)
+
+<!-- BEGIN generated:localization -->
+Held-out comparison of BM25, embeddings and the trained ranker: TODO: not yet run.
+
+**All 1,212 held-out test instances, BM25 only** (reference for the sample above):
+
+| Method | File Top-1 | File Top-5 | Func. Top-1 | Func. Top-3 | Func. Top-5 | Func. MRR |
 |---|---|---|---|---|---|---|
-| BM25 | 52.2% | 98.1% | 25.8% | 43.0% | 52.9% | 0.390 |
-| Embedding retrieval | TODO: not yet run | | | | | |
-| Trained cross-encoder | TODO: not yet run | | | | | |
+| BM25 | 52.1% | 98.1% | 25.8% | 43.0% | 52.9% | 0.390 |
 
-Held-out re-ranking over 1,212 instances (1,107 with a gold function) from four unseen repositories.
-File-level Top-5 is close to trivial (about five candidates, gold always present); the function
-level (about 112 candidates) is the informative comparison. The whole-repository setting on the
-SWE-bench subset: TODO: not yet run.
+Source: `results/localization/heldout_bm25_test.json`.
 
-## 7.4 Resolve rates (RQ1, RQ3, RQ4) (`results/summary/resolve_rates.csv`)
+Whole-repository localization on the SWE-bench subset: TODO: not yet run.
 
-| Config | QuixBugs | SWE-bench subset |
-|---|---|---|
-| B0 (LLM search, base) | in progress: 16 of 40 instances run | TODO: not yet run |
-| E1 (ranker, base) | TODO: not yet run | TODO: not yet run |
-| E2 (LLM search, fine-tuned) | TODO: not yet run | TODO: not yet run |
-| E3 (ranker, fine-tuned, 3 attempts) | TODO: not yet run | TODO: not yet run |
-| E4 (ranker, fine-tuned, 1 attempt) | TODO: not yet run | TODO: not yet run |
+![Top-k fault-localization accuracy on held-out repositories](figures/localization_topk.png)
+<!-- END generated:localization -->
 
-Paired McNemar tests (`results/summary/paired_tests.csv`) and the retries curve (E5) are computed
-once the configurations they compare are complete.
+File-level Top-5 on the held-out set is close to trivial (about five candidates per instance, the
+gold file always present); the function level (about 112 candidates) is the informative comparison.
+The whole-repository setting on the SWE-bench subset is the one the agent faces.
 
-## 7.5 Failure analysis (RQ5) (`results/analysis/taxonomy.md`)
+## 7.4 Resolve rates and paired tests (RQ1, RQ2, RQ4)
 
-On the seven failures of the incomplete B0 run so far, the rules assign: invalid patch 3 (edits that
-broke indentation, for example `depth_first_search`), right file but wrong location 2 (for example
-`knapsack`, where the agent rewrote an unrelated line instead of changing `weight < j` to
-`weight <= j`), incomplete fix 2. These counts will change as B0 completes. Agreement with manual
-labels: TODO: not yet run.
+<!-- BEGIN generated:resolve -->
+| Config | Description | QuixBugs | SWE-bench Lite subset |
+|---|---|---|---|
+| B0 | LLM-search localization, base Gemma 4 E4B, 3 attempts | 9/16 (56.2%, 95% CI 33.2% to 76.9%; run still in progress) | TODO: not yet run |
+| E1 | trained ranker, base Gemma 4 E4B, 3 attempts | TODO: not yet run | TODO: not yet run |
+| E2 | LLM-search localization, fine-tuned Gemma 4 E4B, 3 attempts | TODO: not yet run | TODO: not yet run |
+| E3 | trained ranker, fine-tuned Gemma 4 E4B, 3 attempts | TODO: not yet run | TODO: not yet run |
+| E4 | trained ranker, fine-tuned Gemma 4 E4B, 1 attempt | TODO: not yet run | TODO: not yet run |
+| G1 | trained ranker, Gemini API reference (optional) | TODO: not yet run | TODO: not yet run |
 
-## 7.6 Answers to the research questions
+Source: `results/summary/resolve_rates.csv`.
 
-RQ1–RQ5: TODO, answered from the tables above once the experiments are complete. No claim is made
-before the corresponding paired test exists.
+**Paired comparisons** (exact McNemar test on the instances both runs attempted; TODO: a run is missing or incomplete):
+
+| Question | Benchmark | A vs B | A resolved | B resolved | A only | B only | p |
+|---|---|---|---|---|---|---|---|
+| RQ2: trained ranker vs LLM search (base model) | QuixBugs | B0 vs E1 | - | - | - | - | TODO |
+| RQ3: fine-tuned vs base model (LLM search) | QuixBugs | B0 vs E2 | - | - | - | - | TODO |
+| RQ3: fine-tuned vs base model (trained ranker) | QuixBugs | E1 vs E3 | - | - | - | - | TODO |
+| RQ1: full system vs baseline | QuixBugs | B0 vs E3 | - | - | - | - | TODO |
+| RQ4: retries with feedback (3 attempts) vs 1 attempt | QuixBugs | E4 vs E3 | - | - | - | - | TODO |
+| RQ2: trained ranker vs LLM search (base model) | SWE-bench Lite subset | B0 vs E1 | - | - | - | - | TODO |
+| RQ3: fine-tuned vs base model (LLM search) | SWE-bench Lite subset | B0 vs E2 | - | - | - | - | TODO |
+| RQ3: fine-tuned vs base model (trained ranker) | SWE-bench Lite subset | E1 vs E3 | - | - | - | - | TODO |
+| RQ1: full system vs baseline | SWE-bench Lite subset | B0 vs E3 | - | - | - | - | TODO |
+| RQ4: retries with feedback (3 attempts) vs 1 attempt | SWE-bench Lite subset | E4 vs E3 | - | - | - | - | TODO |
+
+Source: `results/summary/paired_tests.csv`.
+
+![Resolve rate per configuration with 95% Wilson intervals](figures/resolve_rates.png)
+<!-- END generated:resolve -->
+
+B0@1 and E1@1 are B0 and E1 counted as if they had stopped after the first attempt (from the same
+runs), which measures what the retries add.
+
+## 7.5 Runs re-run by fixed rules (D13, D17)
+
+A run is re-run once if a model call stalled for more than 30 minutes, the model server failed, or
+a model call filled the server's context window. These rules ignore whether the bug was fixed, so
+re-running cannot favour any configuration.
+
+<!-- BEGIN generated:requeued -->
+| Experiment | Instance | Reason (fixed rule) | First run | Re-run |
+|---|---|---|---|---|
+| B0 | breadth_first_search | model call took 3799 s (> 1800 s) | not resolved | resolved |
+
+Source: `results/B0/infra_failures.jsonl`, `results/B0/<benchmark>.jsonl`.
+<!-- END generated:requeued -->
+
+## 7.6 Cost per instance
+
+<!-- BEGIN generated:cost -->
+| Config | Benchmark | Minutes (mean / median) | Model calls | Prompt tokens | Output tokens | Attempts | Status |
+|---|---|---|---|---|---|---|---|
+| B0 | QuixBugs | 9.4 / 8.6 | 3.4 | 7,575 | 988 | 2.12 | incomplete (16 instances so far) |
+
+Source: `results/summary/cost.csv`.
+<!-- END generated:cost -->
+
+## 7.7 Failure analysis (RQ5)
+
+<!-- BEGIN generated:failures -->
+| Experiment | Benchmark | Category | Meaning | Runs | Share |
+|---|---|---|---|---|---|
+| B0 | QuixBugs | patch invalid | Patch does not apply / syntax error / no edit produced | 3 of 7 | 42.9% |
+| B0 | QuixBugs | wrong function | Right file, wrong location (function or lines) | 2 of 7 | 28.6% |
+| B0 | QuixBugs | incomplete fix | Incomplete fix (right place, tests still fail) | 2 of 7 | 28.6% |
+
+Source: `results/analysis/taxonomy.csv`, `results/analysis/failure_labels.jsonl`.
+
+Agreement with manual labels: TODO: the blind labelling tool (`scripts/label_failures.py`) needs a person.
+<!-- END generated:failures -->
+
+## 7.8 Answers to the research questions
+
+<!-- BEGIN generated:answers -->
+- **RQ1 (how many real bugs can an open-weight agent fix?)** With base Gemma 4 E4B on a laptop CPU: B0 9/16 (56.2%, 95% CI 33.2% to 76.9%; run still in progress) on QuixBugs. The planned comparison of the full system (E3, with the fine-tuned patch generator) against the baseline is not available, because the fine-tuned model was not trained.
+- **RQ2 (does the trained ranker help?)** QuixBugs: TODO: not yet run (needs complete B0 and E1 runs). SWE-bench Lite subset: TODO: not yet run (needs complete B0 and E1 runs).
+- **RQ3 (does fine-tuning help?)** Not answered: E2-E4 need the fine-tuned model (notebook 02 and its dataset are ready).
+- **RQ4 (do retries with test feedback help?)** QuixBugs: TODO: not yet run (needs complete B0@1 and B0 runs). SWE-bench Lite subset: TODO: not yet run (needs complete B0@1 and B0 runs). QuixBugs: TODO: not yet run (needs complete E1@1 and E1 runs). SWE-bench Lite subset: TODO: not yet run (needs complete E1@1 and E1 runs).
+- **RQ5 (why does the agent fail?)** Most common category: B0 on QuixBugs: patch invalid (3 of 7 failed runs).
+
+Answers marked TODO are filled in automatically when `scripts/run_pipeline.ps1` finishes and this report is rebuilt.
+<!-- END generated:answers -->
+
+## 7.9 Threats to validity
+
+- **Small samples.** Ten SWE-bench instances cannot show small differences; paired tests are
+  reported with their p-values and no claim is made without one.
+- **One run per configuration.** Temperature 0 and a fixed seed make runs repeatable, but a
+  different seed or model version could change individual outcomes.
+- **Reduced-scale ranker.** The cross-encoder was trained on a CPU with a sample of the training
+  data and shorter sequences (D16); the full-scale recipe might rank better.
+- **The agent sees the failing test** (D8), so SWE-bench numbers are not comparable with the
+  public leaderboard.
+- **Infrastructure.** A context-window defect affected early B0 runs; it was found, fixed and the
+  affected runs re-run by a fixed rule (D17). Timings come from a laptop that was also used for
+  other work.
 
 # Chapter 8 — Testing
 
-172 unit tests (pytest) cover the sandbox (with a mocked Docker client), benchmarks, tools, the agent
-loop (scripted model, in-memory sandbox), localization, patch-generation data, statistics, failure
-analysis, the dashboard (FastAPI test client with a fake live runner) and the bot (faked Docker,
-model and agent). Four integration tests run a real QuixBugs container and check that the network
-is unreachable, runaway commands are killed and rejected patches leave the tree untouched. GitHub
-Actions runs ruff, a format check, strict mypy and the unit tests on every push; every merged pull
-request passed CI. Coverage: TODO (reported by `pytest --cov` in CI; to be quoted from the final run).
+<!-- BEGIN generated:testing -->
+The suite has 182 unit tests and 4 integration tests (counted by pytest when this report was built).
+<!-- END generated:testing -->
+
+Unit tests (pytest) cover the sandbox (with a mocked Docker client), benchmarks, tools, the agent
+loop (scripted model, in-memory sandbox), the model client and its context-window check,
+localization and ranker training helpers, patch-generation data, statistics, failure analysis, the
+CLI, the dashboard (FastAPI test client with a fake live runner) and the bot (faked Docker, model
+and agent). The integration tests run a real QuixBugs container and check that the network is
+unreachable, runaway commands are killed and rejected patches leave the tree untouched. GitHub
+Actions runs ruff, a format check, strict mypy and the unit tests on every push, and every merged
+pull request passed CI. The training and evaluation scripts were also smoke-tested end to end with
+a tiny stand-in model before the real runs.
 
 # Chapter 9 — Conclusion and Future Work
 
 PatchPilot delivers a complete, tested repair system — sandbox, agent, CLI, dashboard and GitHub bot
-— together with leakage-checked training data, two training pipelines sized for free hardware and an
-evaluation design that isolates each component's contribution. The experimental conclusions (RQ1–RQ5)
-await the remaining runs.
+— together with leakage-checked training data, a fault-localization ranker trained on a laptop CPU,
+and an evaluation design that isolates each component's contribution with paired tests. Chapter 7
+answers the questions the available runs can answer (RQ1, RQ2, RQ4, RQ5) directly from
+`results/`; the questions about fine-tuning wait for the GPU run that notebook 02 prepares.
 
-**Limitations.** A small model on a CPU; a small SWE-bench sample, so most per-configuration
-differences there will not be statistically significant; the agent sees the failing test, so
+**Limitations.** A small model on a CPU; a small SWE-bench sample, so most differences there will
+not be statistically significant; a reduced-scale ranker; the agent sees the failing test, so
 SWE-bench numbers are not comparable with the public leaderboard (D8); Python only.
 
-**Future work.** Running the 12B model on a GPU; reproduction-test generation so the agent can work
-without a given failing test; the full 300-instance SWE-bench Lite; Java via Defects4J [10].
+**Future work.** Training the QLoRA patch generator (notebook 02) and running E2–E4; the full-scale
+ranker; reproduction-test generation so the agent can work without a given failing test; the full
+300-instance SWE-bench Lite; Java via Defects4J [10].
 
 # References
 
@@ -418,6 +576,11 @@ without a given failing test; the full 300-instance SWE-bench Lite; Java via Def
 
 - **A. Sample trajectory:** `patchpilot show <run_id>` or the dashboard; raw files in
   `results/B0/trajectories/`.
-- **B. Configuration files:** `configs/exp_baseline.yaml`, `configs/agent_dev.yaml`, the seeded
-  subsets in `configs/`.
+- **B. Configuration files:** `configs/exp_baseline.yaml`, `configs/exp_e1_ranker.yaml`,
+  `configs/agent_dev.yaml`, the seeded subsets in `configs/` and the Ollama model in
+  `configs/ollama/`.
 - **C. User manual:** the README's Quickstart, "Reproducing the experiments" and "GitHub bot".
+- **D. Running the remaining experiments:** `powershell -File scripts/run_pipeline.ps1 -Detach`
+  (progress in `logs/pipeline.log`).
+- **E. Rebuilding this report:** `python scripts/capture_figures.py` (screenshots and diagrams),
+  `python scripts/make_figures.py` (charts), then `python scripts/build_report.py`.
