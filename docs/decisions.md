@@ -263,3 +263,16 @@ ran with: the B0 QuixBugs rows run on 2026-10-28 used an intermediate 16,384-tok
 
 **Why:** a silent cap on the context is an infrastructure defect, not agent behaviour. Fixing it
 in the server's model and checking it automatically means it cannot come back unnoticed.
+
+## D18 — Fine-tuning the patch generator is dropped (2026-10-28)
+
+**Context:** the QLoRA fine-tuning of Gemma 4 E4B (notebook 02) needs a GPU, which this project
+does not have, and the base model already fixes bugs (B0: 19 of 40 QuixBugs bugs).
+
+**Decision (owner):** the fine-tuning run, the experiments that need it (E2, E3, E4) and the
+optional Gemini reference (G1) are dropped. The training data on the Hub, notebook 02 and the model
+card stay, so the run can be done later on a GPU. RQ3 is not studied; RQ4 (retries) is measured on
+B0 and E1 instead of E3; RQ1 is answered by the base-model runs.
+
+**Why:** a working system evaluated honestly on the hardware available is better than a plan that
+cannot run, and the result tables no longer carry permanent TODO rows.

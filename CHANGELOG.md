@@ -6,6 +6,11 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Changed
+- Fine-tuning the patch generator (E2–E4) and the Gemini reference (G1) are dropped (D18);
+  the tables and the report cover B0 and E1. `scripts/finish_when_done.ps1` commits and pushes
+  the results when the pipeline ends.
+
 ### Fixed
 - Experiments ran with Ollama's 4,096-token default context because its OpenAI-compatible API
   ignores a per-request `num_ctx`; models now come from `configs/ollama/gemma4-e4b-32k.Modelfile`,

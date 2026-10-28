@@ -63,7 +63,8 @@ evaluation.
    resources.
 2. An agent with a small, auditable tool interface and test-feedback retries, recording every step.
 3. A trained fault-localization ranker compared with BM25 and embedding retrieval.
-4. A QLoRA-fine-tuned Gemma 4 E4B patch generator compared with the base model.
+4. A QLoRA fine-tuning pipeline for the patch generator (data and notebook; the training run
+   was dropped, D18).
 5. A rigorous evaluation with baselines, ablations and paired statistical tests, plus a failure
    taxonomy.
 6. Product interfaces: CLI, dashboard and a GitHub pull-request bot.
@@ -72,9 +73,9 @@ evaluation.
 
 Python programs only; evaluation on QuixBugs (40 programs) and a seeded 10-instance subset of
 SWE-bench Lite drawn from 49 sanity-checked instances. All inference and the ranker's training run
-on a laptop CPU (decisions D12 and D16 in `docs/decisions.md`). The patch generator's QLoRA
-training (objective 4) is prepared for a free Kaggle GPU but was not run, so the comparisons that
-need the fine-tuned model stay open.
+on a laptop CPU (decisions D12 and D16 in `docs/decisions.md`). Fine-tuning the patch generator
+(objective 4) was dropped (decision D18): the base model already fixes bugs and no GPU was
+available; its training data and notebook stay in the repository.
 
 ## 1.6 Research questions
 
@@ -82,7 +83,7 @@ need the fine-tuned model stay open.
 |---|---|
 | RQ1 | How many real bugs can an open-weight LLM agent fix on QuixBugs and the SWE-bench Lite subset? |
 | RQ2 | How much does a trained fault-localization model improve the fix rate over LLM-based search? |
-| RQ3 | How much does LoRA fine-tuning the patch generator help over the base model? |
+| RQ3 | How much does LoRA fine-tuning the patch generator help over the base model? (dropped, D18) |
 | RQ4 | How much does test-feedback retrying help, and how many attempts are worth it? |
 | RQ5 | Where does the agent fail? |
 
@@ -146,9 +147,8 @@ base model, making fine-tuning of multi-billion-parameter models possible on a s
 
 Existing agents mostly (i) rely on large proprietary models, (ii) localize with prompting rather than
 a trained, evaluated ranker, and (iii) report a single resolve rate without paired statistics or a
-systematic account of failures. PatchPilot isolates the contribution of a trained localizer, of
-retries and (when trained) of fine-tuning, with controlled ablations on an open model small enough
-for a laptop.
+systematic account of failures. PatchPilot isolates the contribution of a trained localizer and of
+retries, with controlled ablations on an open model small enough for a laptop.
 
 # Chapter 3 — System Requirements
 
@@ -159,7 +159,7 @@ for a laptop.
 | CPU / GPU | Intel Core i5-1335U (10 cores, 12 threads) / Intel Iris Xe, no CUDA GPU |
 | RAM | 15.6 GB, shared with Docker Desktop and the model server (about 8 GB for Gemma 4 E4B) |
 | Disk | Docker data on a separate drive; PatchPilot kept under 10 GB (decision D14) |
-| Training | ranker: the same laptop CPU (D16); patch generator: notebook prepared for a free Kaggle T4 GPU (not run) |
+| Training | ranker: the same laptop CPU (D16); patch-generator fine-tuning dropped (D18) |
 
 ## 3.2 Software
 
@@ -264,7 +264,7 @@ Each module's design, rationale and rejected alternatives are written up in `doc
   on the CPU (`scripts/train_ranker_cpu.py`, D16), and its sequence lengths travel with the model so
   inference cuts texts exactly as training did.
 - **Patch generator (A2).** Training chats are exactly the agent's prompt; the target is the gold
-  fix rewritten as SEARCH/REPLACE blocks, verified to reproduce `git apply`.
+  fix rewritten as SEARCH/REPLACE blocks, verified to reproduce `git apply`. The training run itself was dropped (D18).
 - **Evaluation (A4).** Results are written per instance with the git commit; infrastructure stalls
   are re-run once by a fixed rule (D13); exact McNemar tests compare configurations only when both
   are complete. `scripts/run_pipeline.ps1` runs every remaining step unattended, one heavy job at a
@@ -333,14 +333,14 @@ conda, spaCy, meson). Dataset cards: `docs/dataset_cards/`.
 
 ## 6.3 Training setup
 
-| | Fault-localization ranker (trained) | Patch generator (prepared, not trained) |
+| | Fault-localization ranker (trained) | Patch generator (prepared; training dropped, D18) |
 |---|---|---|
 | Base model | `microsoft/unixcoder-base` (125M) | `google/gemma-4-E4B-it` |
 | Method | full fine-tuning, 2-class cross-encoder | QLoRA (4-bit NF4, LoRA r=16, α=32, dropout 0.05) |
 | Data | seeded sample of 2,000 training instances; all positives, 4 hard-negative files, 8 negative functions each | 3,063 chats |
 | Length | 256 tokens (bug report: 128) | 3,072 tokens |
 | Optimisation | lr 3e-5, batch 16, at most 1 epoch within a 4-hour budget, fp32 | lr 2e-4 cosine, batch 16, 1 epoch, paged 8-bit AdamW |
-| Hardware | laptop CPU (D16) | Kaggle T4 (notebook 02, needs the owner's account) |
+| Hardware | laptop CPU (D16) | Kaggle T4 (notebook 02; not run) |
 
 The full-scale GPU recipe for the ranker (all 113,396 pairs, 384 tokens) stays in notebook 01; the
 CPU run below is the model used in every reported result.
@@ -517,14 +517,13 @@ a tiny stand-in model before the real runs.
 PatchPilot delivers a complete, tested repair system — sandbox, agent, CLI, dashboard and GitHub bot
 — together with leakage-checked training data, a fault-localization ranker trained on a laptop CPU,
 and an evaluation design that isolates each component's contribution with paired tests. Chapter 7
-answers the questions the available runs can answer (RQ1, RQ2, RQ4, RQ5) directly from
-`results/`; the questions about fine-tuning wait for the GPU run that notebook 02 prepares.
+answers RQ1, RQ2, RQ4 and RQ5 directly from `results/`; RQ3 (fine-tuning) was dropped (D18).
 
 **Limitations.** A small model on a CPU; a small SWE-bench sample, so most differences there will
 not be statistically significant; a reduced-scale ranker; the agent sees the failing test, so
 SWE-bench numbers are not comparable with the public leaderboard (D8); Python only.
 
-**Future work.** Training the QLoRA patch generator (notebook 02) and running E2–E4; the full-scale
+**Future work.** Fine-tuning the patch generator on a GPU (notebook 02 is ready); the full-scale
 ranker; reproduction-test generation so the agent can work without a given failing test; the full
 300-instance SWE-bench Lite; Java via Defects4J [10].
 
