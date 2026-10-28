@@ -5,6 +5,7 @@ from unittest.mock import MagicMock
 
 import docker
 import pytest
+import requests
 
 from patchpilot.benchmarks import swebench
 from patchpilot.sandbox import TestStatus
@@ -132,6 +133,33 @@ def test_pull_gives_up_after_the_last_attempt(monkeypatch: pytest.MonkeyPatch) -
         pass
 
     assert client.images.pull.call_count == swebench.PULL_ATTEMPTS
+
+
+def test_a_slow_image_delete_does_not_lose_the_finished_run(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    client = MagicMock()
+    client.images.get.side_effect = [docker.errors.ImageNotFound("missing"), None]
+    client.images.remove.side_effect = requests.exceptions.ReadTimeout("Read timed out.")
+
+    def run() -> str:  # the shape of evaluation.runner._run_one
+        with swebench.pulled_image("img", client=client):
+            return "trajectory"
+
+    assert run() == "trajectory"
+    assert "could not remove image img" in capsys.readouterr().err
+
+
+def test_the_docker_client_waits_long_enough_for_slow_deletes(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from_env = MagicMock()
+    monkeypatch.setattr(docker, "from_env", from_env)
+
+    with swebench.pulled_image("img"):
+        pass
+
+    from_env.assert_called_once_with(timeout=swebench.DOCKER_TIMEOUT_S)
 
 
 def test_pulled_image_keeps_images_that_were_already_present() -> None:
