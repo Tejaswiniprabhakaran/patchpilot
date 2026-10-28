@@ -6,7 +6,26 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+- Experiments ran with Ollama's 4,096-token default context because its OpenAI-compatible API
+  ignores a per-request `num_ctx`; models now come from `configs/ollama/gemma4-e4b-32k.Modelfile`,
+  `patchpilot eval` checks the server's window first, and affected runs are re-run (D17).
+- `patchpilot show` printed code such as `[i] * count` as Rich markup.
+- The cross-encoder used 512-token inputs at inference while the notebook trains at 384; the
+  training lengths now travel with the model (`patchpilot.json`).
+- `scripts/pause_patchpilot.ps1` missed `patchpilot eval` when it runs as `python.exe`.
+
 ### Added
+- CPU training of the fault-localization ranker (`scripts/train_ranker_cpu.py`, D16) and E1
+  (`configs/exp_e1_ranker.yaml`, `localizer: ranker`).
+- `scripts/run_pipeline.ps1`: every remaining experiment step, unattended, one heavy job at a time,
+  resumable, with disk and Docker checks.
+- Localization evaluation on a seeded held-out sample and on the 10-instance SWE-bench subset.
+- Retries measured on the base-model runs (B0@1, E1@1) and a per-configuration retries curve.
+- Report builder (`scripts/build_report.py`): result sections generated from `results/`, DOCX via
+  python-docx, PDF and table of contents via Microsoft Word. `scripts/capture_figures.py`
+  captures the diagrams, dashboard, CLI and bot screenshots with headless Edge.
+- GitHub bot demo on `Tejaswiniprabhakaran/patchpilot-demo#1`, recorded in `results/bot_demo/`.
 - Fault-localization dataset (8,561 instances, split by repository), leakage check (zero overlap),
   BM25 baseline, embedding retrieval, cross-encoder ranker, `RankerLocalizer`, evaluation script,
   Kaggle notebook 01, dataset card. BM25 held-out baseline results.
