@@ -11,6 +11,35 @@ powershell -File C:\dev\patchpilot\scripts\pause_patchpilot.ps1
 cd C:\dev\patchpilot; powershell -File scripts/run_detached.ps1 -Name B0_quixbugs eval --config configs/exp_baseline.yaml --benchmark quixbugs
 ```
 
+## 2026-10-28 — All software built; experiments and training still pending
+
+**Done (PRs #20–#26, all merged into `develop`, CI green, 172 unit tests)**
+- Phases 2–4 merged: agent + CLI, localization data/baselines/ranker/notebook 01, patch-generation
+  data/notebook 02.
+- BM25 held-out localization baseline: function Top-1 25.8%, Top-5 52.9%, MRR 0.390 (n=1,107);
+  file Top-1 52.2% (`results/localization/heldout_bm25_test.json`).
+- Evaluation statistics, results tables (`results/summary/`) and figures (`report/figures/`).
+- Failure analysis: classifier + LLM judge + blind labelling; first taxonomy on B0's 7 failures so
+  far (`results/analysis/taxonomy.md`, B0 incomplete).
+- Dashboard (`patchpilot dashboard`, 127.0.0.1:8765), verified in the browser on real B0 results.
+- GitHub Action / PR bot (`github_action/`), tested with fakes.
+- Final README, `docs/architecture.md`, model cards, explainers for every component.
+- Commit/push helper `scripts/dev/gate.sh`: pushes use the gh account because a second GitHub
+  account is stored in the Windows credential manager.
+
+**Blocked on the owner**
+- Docker Desktop is down: B0 stopped at 16/40 QuixBugs; every experiment needs Docker.
+- Kaggle notebooks 01 and 02 not run yet: no trained ranker or fine-tuned model on the Hub.
+- Creating the public demo repository `Tejaswiniprabhakaran/patchpilot-demo` was blocked by the
+  permission system; it is ready locally at `C:\dev\patchpilot-demo` (pricing library, tests,
+  workflow). Needs the owner's approval or the owner to create the GitHub repo.
+- Report: decide whether the university-format report is still wanted for a resume project.
+
+**Next (once unblocked)**
+- Finish B0 (QuixBugs, then 10 SWE-bench instances one image at a time), tag v0.1.0.
+- Evaluate the ranker (held-out + SWE-bench), run E1; swap in the fine-tuned model, run E2/E3.
+- Manual labels for 30 failures; re-run summaries, figures, taxonomy; releases.
+
 ## 2026-10-04 — Datasets built and on the Hub; Kaggle checkpoint
 
 **Done**

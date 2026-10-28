@@ -7,6 +7,18 @@ All notable changes to this project are documented here. The format follows
 ## [Unreleased]
 
 ### Added
+- Fault-localization dataset (8,561 instances, split by repository), leakage check (zero overlap),
+  BM25 baseline, embedding retrieval, cross-encoder ranker, `RankerLocalizer`, evaluation script,
+  Kaggle notebook 01, dataset card. BM25 held-out baseline results.
+- Patch-generation dataset (4,137 chats in the agent's SEARCH/REPLACE format), Kaggle QLoRA notebook
+  02 for Gemma 4 E4B with GGUF export, dataset card.
+- Evaluation statistics (Wilson intervals, exact McNemar), results tables and figures from
+  `results/`.
+- Failure analysis: rule classifier, LLM judge, blind manual labelling, Cohen's kappa.
+- Web dashboard (`patchpilot dashboard`) with live Try-it runs.
+- GitHub Action / PR bot that comments verified fixes (never pushes or merges).
+- Infrastructure-stall re-run rule, detached low-priority launcher, pause script, resource rules.
+- Final README, architecture document, model cards.
 - Docker sandbox (S1): network disabled, CPU/memory/pid limits, capabilities dropped, no host
   mounts, timeouts, safe patch application, per-test result parsing.
 - QuixBugs loader and image; SWE-bench Lite loader on the official harness; seeded 50-instance
@@ -19,6 +31,9 @@ All notable changes to this project are documented here. The format follows
 - Local LLM speed measurement script.
 
 ### Fixed
+- Function-level localization scoring ignores module-level labels.
+- Failure classifier ignores docstring/blank-line changes when locating the gold fix.
+- `httpx` declared for the dashboard (CI).
 - QuixBugs gold patches built from git objects so CRLF files apply on Windows checkouts.
 - SWE-bench image pulls are verified and retried.
 
