@@ -14,9 +14,11 @@ from typing import Annotated, Any
 
 import typer
 from rich.console import Console
+from rich.markup import escape
 from rich.panel import Panel
 from rich.syntax import Syntax
 from rich.table import Table
+from rich.text import Text
 
 from patchpilot import __version__
 
@@ -130,7 +132,7 @@ def show(
             step["name"],
             "[green]yes[/]" if step["ok"] else "[red]no[/]",
             f"{step['duration_s']:.1f}",
-            details,
+            Text(details),  # code such as `[i] * count` must not be read as Rich markup
         )
     console.print(table)
     _print_result(data)
@@ -162,13 +164,13 @@ def _print_result(data: dict[str, Any]) -> None:
     lines = [
         status,
         f"attempts used: {result.get('attempts_used')}",
-        f"localized files: {', '.join(result.get('localized_files', []))}",
+        f"localized files: {escape(', '.join(result.get('localized_files', [])))}",
         f"LLM calls: {result.get('llm_calls')}, tokens in/out: "
         f"{result.get('prompt_tokens')}/{result.get('completion_tokens')}",
         f"wall time: {result.get('wall_s')} s",
     ]
     if result.get("error"):
-        lines.append(f"[red]error: {result['error']}[/]")
+        lines.append(f"[red]error: {escape(str(result['error']))}[/]")
     console.print(Panel("\n".join(lines), title="Result"))
     if result.get("final_patch"):
         console.print(Syntax(result["final_patch"], "diff", theme="ansi_dark"))
