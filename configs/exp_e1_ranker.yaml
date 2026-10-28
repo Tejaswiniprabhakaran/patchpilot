@@ -6,11 +6,11 @@ localizer: ranker
 ranker_model: data/models/fl-cross-encoder
 llm:
   base_url: http://localhost:11434/v1
-  model: gemma4:e4b
+  model: gemma4-e4b-32k  # gemma4:e4b with a 32K window (configs/ollama, D17)
   temperature: 0.0
   seed: 42
   max_tokens: 2048
-  context_tokens: 16384
+  context_tokens: 32768
   reasoning_effort: none  # decisions.md D10
 agent:
   max_attempts: 3
