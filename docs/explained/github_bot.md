@@ -33,8 +33,11 @@ every pull request; the `patchpilot` job runs only `if: failure()`. Inputs:
 | `max-attempts` | `2` | repair attempts, each tested before the next |
 | `protected-paths` | `tests/` | paths the agent is not allowed to edit |
 
-With the default settings the runner installs Ollama, downloads the model once (cached between
-runs) and runs it on the runner's CPU, so no API key or paid service is needed.
+With the default settings the runner installs Ollama, downloads the model and runs it on the
+runner's CPU, so no API key or paid service is needed. The model is downloaded on every run rather
+than cached: on a GitHub-hosted runner the 5.5 GB Gemma 4 E4B download took about 35 s, which a
+cache restore of the same 5.5 GB would not beat, and the cache entry would take most of the
+repository's 10 GB Actions cache allowance.
 
 ## Safety
 
