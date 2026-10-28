@@ -226,15 +226,20 @@ prompt was cut (largest prompt: 3,869 tokens), but 5 of 63 model calls, in 4 run
 (find_first_in_sorted, hanoi, kth, lis), filled the window, so the server ended those answers
 early. Longer SWE-bench prompts would have been cut from the front.
 
-**Decision:** the window is set in the model itself. `gemma4-e4b-16k` is `gemma4:e4b` (same
-weight files and quantization) with `PARAMETER num_ctx 16384` (`configs/ollama/`), and every
-experiment and the LLM judge use it from now on. `patchpilot eval` asks the Ollama server for the
+**Decision:** the window is set in the model itself. `gemma4-e4b-32k` is `gemma4:e4b` (same
+weight files and quantization) with `PARAMETER num_ctx 32768` (`configs/ollama/`), and every
+experiment and the LLM judge use it from now on. 32,768 rather than the configured 16,384: a
+SWE-bench repair prompt can hold up to 900 lines of code (about 11,000 tokens), and with the
+longest issue in the evaluation subset (pytest-7168, 8,443 characters), the test output and a
+2,048-token answer, a call can reach about 17,500 tokens. The larger window costs 64 MB of memory
+(the KV cache of the one global-attention layer). `patchpilot eval` asks the Ollama server for the
 model's window (`/api/show`) and refuses to start if it is smaller than `context_tokens`. The 4
 affected B0 rows are re-run once through the D13 mechanism
 (`requeue_infra_failures.py --context-window 4096`), a rule that ignores whether the bug was fixed
 (one of the 4 had been resolved). The other B0 rows are kept: none of their calls reached the
-window, so the larger window does not change their computation. Each row records the model name
-it ran with.
+window, so a larger window does not change their computation. Each row records the model name it
+ran with: the B0 QuixBugs rows run on 2026-10-28 used an intermediate 16,384-token alias
+(`gemma4-e4b-16k`); QuixBugs calls stay below 6,000 tokens, so 16K and 32K compute the same.
 
 **Why:** a silent cap on the context is an infrastructure defect, not agent behaviour. Fixing it
 in the server's model and checking it automatically means it cannot come back unnoticed.
