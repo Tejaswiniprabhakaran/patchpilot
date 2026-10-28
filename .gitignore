@@ -53,7 +53,7 @@ logs/run_evaluation/
 # --- Agent run artefacts (large trajectories stay local; summaries go in results/) ---
 runs/
 
-# --- Report build intermediates (final DOCX/PDF in report/build/ ARE committed) ---
+# --- Report: report/PatchPilot_report.docx and .pdf are committed; not Word's lock files ---
 report/build/*.tmp
 ~$*.docx
 

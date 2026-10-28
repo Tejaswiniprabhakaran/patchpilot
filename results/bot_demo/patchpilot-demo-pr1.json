@@ -1,0 +1,35 @@
+{
+  "pull_request": {
+    "headRefName": "refactor/basket-total",
+    "title": "Refactor basket_total loop",
+    "url": "https://github.com/Tejaswiniprabhakaran/patchpilot-demo/pull/1"
+  },
+  "comment": {
+    "created_at": "2026-10-28T06:39:11Z",
+    "url": "https://github.com/Tejaswiniprabhakaran/patchpilot-demo/pull/1#issuecomment-6462488006",
+    "body": "<!-- patchpilot-bot -->\n### \ud83d\udee0\ufe0f PatchPilot\n\nThe tests in this pull request fail. PatchPilot found a change that makes them pass in an isolated sandbox. **It has not been applied**; review it and apply it yourself if it is right.\n\n- Model: `gemma4:e4b` \u00b7 attempts used: 1 \u00b7 time: 116 s\n- Files it suspected: `shop/pricing.py`\n\n<details open><summary>Proposed patch</summary>\n\n```diff\ndiff --git a/shop/pricing.py b/shop/pricing.py\nindex 138bd61..25d231d 100644\n--- a/shop/pricing.py\n+++ b/shop/pricing.py\n@@ -12,8 +12,8 @@ def basket_total(prices: list[float]) -> float:\n     \"\"\"Sum of all prices in the basket, rounded to two decimals.\"\"\"\n     total = 0.0\n     # Accumulate pairwise to keep floating-point error small on long baskets.\n-    for i in range(len(prices) - 1):\n-        total += prices[i]\n+    for price in prices:\n+        total += price\n     return round(total, 2)\n```\n\n</details>\n\n<details><summary>Test output before</summary>\n\n```\nPassed: 4  Failed: 2\n  failing: tests/test_pricing.py::test_basket_total\n  failing: tests/test_pricing.py::test_basket_total_single_item\nTests are not passing yet.\n--- end of test output ---\n..FF..                                                                   [100%]\n=================================== FAILURES ===================================\n______________________________ test_basket_total _______________________________\n\n    def test_basket_total():\n>       assert basket_total([10.0, 20.5, 30.25]) == 60.75\nE       assert 30.5 == 60.75\nE        +  where 30.5 = basket_total([10.0, 20.5, 30.25])\n\ntests/test_pricing.py:16: AssertionError\n________________________ test_basket_total_single_item _________________________\n\n    def test_basket_total_single_item():\n>       assert basket_total([9.99]) == 9.99\nE       assert 0.0 == 9.99\nE        +  where 0.0 = basket_total([9.99])\n\ntests/test_pricing.py:20: AssertionError\n==================================== PASSES ====================================\n=========================== short test summary info ============================\nPASSED tests/test_pricing.py::test_discount\nPASSED tests/test_pricing.py::test_discount_rejects_bad_percent\nPASSED tests/test_pricing.py::test_basket_total_empty\nPASSED tests/test_pricing.py::test_most_expensive\nFAILED tests/test_pricing.py::test_basket_total - assert 30.5 == 60.75\nFAILED tests/test_pricing.py::test_basket_total_single_item - assert 0.0 == 9.99\n2 failed, 4 passed in 0.03s\n\n```\n\n</details>\n\n<details><summary>Test output with the patch</summary>\n\n```\n......                                                                   [100%]\n==================================== PASSES ====================================\n=========================== short test summary info ============================\nPASSED tests/test_pricing.py::test_discount\nPASSED tests/test_pricing.py::test_discount_rejects_bad_percent\nPASSED tests/test_pricing.py::test_basket_total\nPASSED tests/test_pricing.py::test_basket_total_single_item\nPASSED tests/test_pricing.py::test_basket_total_empty\nPASSED tests/test_pricing.py::test_most_expensive\n6 passed in 0.01s\n\n```\n\n</details>\n\n<sub>PatchPilot only comments. It never pushes commits or merges pull requests.</sub>"
+  },
+  "workflow_run": {
+    "conclusion": "failure",
+    "createdAt": "2026-10-28T06:34:49Z",
+    "databaseId": 40644715967,
+    "event": "pull_request",
+    "headBranch": "refactor/basket-total",
+    "updatedAt": "2026-10-28T06:39:18Z",
+    "url": "https://github.com/Tejaswiniprabhakaran/patchpilot-demo/actions/runs/40644715967"
+  },
+  "jobs": [
+    {
+      "name": "tests",
+      "conclusion": "failure",
+      "started_at": "2026-10-28T06:34:53Z",
+      "completed_at": "2026-10-28T06:35:00Z"
+    },
+    {
+      "name": "patchpilot",
+      "conclusion": "success",
+      "started_at": "2026-10-28T06:35:04Z",
+      "completed_at": "2026-10-28T06:39:17Z"
+    }
+  ]
+}
