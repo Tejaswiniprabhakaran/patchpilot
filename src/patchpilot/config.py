@@ -27,6 +27,8 @@ class ExperimentConfig(BaseModel):
     llm: LLMConfig = Field(default_factory=LLMConfig)
     agent: AgentConfig = Field(default_factory=AgentConfig)
     benchmarks: list[BenchmarkSelection] = Field(default_factory=list)
+    # Folder or Hugging Face id of the trained cross-encoder (localizer: ranker).
+    ranker_model: str | None = None
     results_dir: Path = Path("results")
     seed: int = 42
 

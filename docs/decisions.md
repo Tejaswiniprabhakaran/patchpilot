@@ -217,7 +217,27 @@ On the smoke build this kept 123 of 300 instances, with only 13 dropped for leng
 very long sequences, and dropping by shape is principled where dropping by length alone would
 silently remove the hardest examples.
 
-## D17 — The 16K context window is set in the Ollama model and checked before every run (2026-10-28)
+## D16 — The fault-localization ranker is trained on the laptop CPU, at reduced scale (2026-10-28)
+
+**Context:** notebook 01 trains the cross-encoder on a free Kaggle T4 GPU, which only the owner
+can run. The project has to be finished on this laptop, which has no NVIDIA GPU.
+
+**Decision:** `scripts/train_ranker_cpu.py` runs the notebook's recipe (base model
+`microsoft/unixcoder-base`, the same pair rule, 2-class loss, seed 42) on the CPU at reduced
+scale: sequences of 256 tokens (query 128) instead of 384 (192); a seeded random sample of 2,000 of
+the 6,329 training instances; batch 16; learning rate 3e-5; and a 4-hour budget. Three timed probe
+steps turn the budget into a step count before training starts (at most one epoch), and the log
+(`results/training/fault_localization_log.json`) records the steps, pairs seen and timings. The
+lengths are saved with the model (`patchpilot.json`) and used at inference. Because the ranker
+needs one forward pass per candidate, held-out evaluation uses a seeded sample of 200 test
+instances, with BM25 and embeddings on the same sample; SWE-bench evaluation uses the 10 instances
+the agent is evaluated on (D12). Training runs only after B0, never next to another heavy job (D14).
+
+**Why:** at 125M parameters the ranker can be fine-tuned on a CPU in hours. A smaller model that
+really exists and is evaluated honestly is better than a GPU recipe that never ran. The reduced
+scale is reported as a limitation, and the notebook stays as the full-scale recipe.
+
+## D17 — A 32K context window is set in the Ollama model and checked before every run (2026-10-28)
 
 **Found:** Ollama's OpenAI-compatible API ignores the per-request `num_ctx` the client sent, so
 every B0 call so far ran with Ollama's default 4,096-token window instead of the configured

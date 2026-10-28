@@ -92,3 +92,18 @@ def test_show_unknown_run_exits_with_error(monkeypatch: pytest.MonkeyPatch, tmp_
 def test_example_configs_are_valid() -> None:
     for path in Path("configs").glob("*.yaml"):
         ExperimentConfig.load(path)
+
+
+def test_ranker_localizer_is_built_from_config(tmp_path: Path) -> None:
+    from patchpilot.evaluation.runner import make_localizer
+    from patchpilot.llm import ScriptedClient
+    from patchpilot.localization.localizer import RankerLocalizer
+
+    config = ExperimentConfig(id="E1", localizer="ranker", ranker_model="some/model")
+
+    localizer = make_localizer(config, ScriptedClient([]))
+
+    assert isinstance(localizer, RankerLocalizer)
+    assert localizer.file_ranker.model_id == "some/model"  # type: ignore[attr-defined]
+    with pytest.raises(ValueError):
+        make_localizer(ExperimentConfig(id="E1", localizer="ranker"), ScriptedClient([]))
