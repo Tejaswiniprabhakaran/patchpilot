@@ -39,9 +39,9 @@ runs:
       shell: bash
       run: python -m pip install --quiet "${{ github.action_path }}/.."
 
-    # The model is downloaded on every run, not cached: Gemma 4 E4B (5.5 GB) takes about 35 s on a
-    # GitHub-hosted runner, restoring 5.5 GB from the Actions cache is no faster, and it would fill
-    # most of a repository's 10 GB cache allowance.
+    # The model is downloaded on every run, not cached: Gemma 4 E4B (5.5 GB) took 35 s and 85 s in
+    # two runs on GitHub-hosted runners, restoring 5.5 GB from the Actions cache is unlikely to be
+    # much faster, and it would fill most of a repository's 10 GB cache allowance.
     - name: Start Ollama
       if: inputs.llm-base-url == ''
       shell: bash

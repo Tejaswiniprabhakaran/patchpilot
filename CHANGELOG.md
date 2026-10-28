@@ -16,8 +16,10 @@ All notable changes to this project are documented here. The format follows
 - `scripts/pause_patchpilot.ps1` missed `patchpilot eval` when it runs as `python.exe`.
 - The GitHub Action's model cache never saved anything (Ollama's install script runs a systemd
   service that keeps models outside the cached folder) and warned on every run. The cache step is
-  removed: the download takes about 35 s, which a 5.5 GB cache restore would not beat. Ollama is
-  started by hand only where the install script could not start the service.
+  removed: the download took 35 s and 85 s in two runs, and a 5.5 GB cache restore is unlikely to
+  be much faster. Ollama is started by hand only where the install script could not start the
+  service. Verified on the demo pull request: no cache warning, and the bot still posted a working
+  patch.
 
 ### Added
 - CPU training of the fault-localization ranker (`scripts/train_ranker_cpu.py`, D16) and E1
