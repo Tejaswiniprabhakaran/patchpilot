@@ -50,7 +50,7 @@ class LLMConfig(BaseModel):
     # Context window the run needs. Ollama's OpenAI-compatible API cannot set it per request, so
     # the Ollama model itself is created with it (configs/ollama/); `patchpilot eval` refuses to
     # start when the server's window is smaller (decisions D17).
-    context_tokens: int | None = 16384
+    context_tokens: int | None = 32768
     # Passed to the server as `reasoning_effort` when set, e.g. "none" to switch thinking off.
     reasoning_effort: str | None = None
 
