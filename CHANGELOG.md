@@ -14,6 +14,10 @@ All notable changes to this project are documented here. The format follows
 - The cross-encoder used 512-token inputs at inference while the notebook trains at 384; the
   training lengths now travel with the model (`patchpilot.json`).
 - `scripts/pause_patchpilot.ps1` missed `patchpilot eval` when it runs as `python.exe`.
+- The GitHub Action's model cache never saved anything (Ollama's install script runs a systemd
+  service that keeps models outside the cached folder) and warned on every run. The cache step is
+  removed: the download takes about 35 s, which a 5.5 GB cache restore would not beat. Ollama is
+  started by hand only where the install script could not start the service.
 
 ### Added
 - CPU training of the fault-localization ranker (`scripts/train_ranker_cpu.py`, D16) and E1
