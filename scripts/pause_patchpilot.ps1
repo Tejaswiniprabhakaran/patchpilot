@@ -3,12 +3,23 @@
 # the instance that was interrupted is simply run again. Other projects are never touched.
 #
 # Usage:  powershell -File scripts/pause_patchpilot.ps1
+#
+# The pipeline goes first, so it cannot start its next step while the current one is stopped.
+# `patchpilot eval` usually shows up as python.exe running Scripts\patchpilot.exe, so command
+# lines are matched, not only process names.
+$patterns = @(
+    "*run_pipeline.ps1*",
+    "*patchpilot.exe*eval*",
+    "*train_ranker_cpu.py*",
+    "*build_localization_data.py*",
+    "*eval_localization.py*",
+    "*sanity_gold_patches.py*"
+)
 $jobs = Get-CimInstance Win32_Process | Where-Object {
-    ($_.Name -eq "patchpilot.exe") -or
-    ($_.CommandLine -like "*build_localization_data.py*") -or
-    ($_.CommandLine -like "*eval_localization.py*") -or
-    ($_.CommandLine -like "*sanity_gold_patches.py*")
-}
+    $line = $_.CommandLine
+    ($_.ProcessId -ne $PID) -and ($line -notlike "*pause_patchpilot.ps1*") -and
+    (($_.Name -eq "patchpilot.exe") -or ($patterns | Where-Object { $line -like $_ }))
+} | Sort-Object { if ($_.CommandLine -like "*run_pipeline.ps1*") { 0 } else { 1 } }
 foreach ($job in $jobs) {
     # Stop the whole tree: the launcher shell, patchpilot.exe and its python children.
     & taskkill /PID $job.ProcessId /T /F 2>$null | Out-Null

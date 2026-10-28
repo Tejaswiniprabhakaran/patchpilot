@@ -39,6 +39,27 @@ def test_normal_runs_are_kept(tmp_path: Path) -> None:
     assert infra_reason(row("d"), tmp_path) is None
 
 
+def write_token_trajectory(directory: Path, run_id: str, calls: list[tuple[int, int]]) -> None:
+    directory.mkdir(parents=True, exist_ok=True)
+    steps = [
+        {"kind": "llm", "duration_s": 60.0, "meta": {"prompt_tokens": p, "completion_tokens": c}}
+        for p, c in calls
+    ]
+    with gzip.open(directory / f"{run_id}.json.gz", "wt", encoding="utf-8") as handle:
+        json.dump({"steps": steps}, handle)
+
+
+def test_a_call_that_filled_the_context_window_is_an_infra_failure(tmp_path: Path) -> None:
+    write_token_trajectory(tmp_path, "a-1", [(1500, 300), (2175, 1917)])  # 4,092 of 4,096
+    write_token_trajectory(tmp_path, "d-1", [(3000, 500)])
+
+    reason = infra_reason(row("a", resolved=True), tmp_path, context_window=4096)
+
+    assert reason and "4092 tokens" in reason
+    assert infra_reason(row("d"), tmp_path, context_window=4096) is None
+    assert infra_reason(row("a"), tmp_path) is None  # only checked when the window is given
+
+
 def test_each_instance_is_requeued_at_most_once(tmp_path: Path) -> None:
     write_trajectory(tmp_path, "a-1", [4000.0])
     write_trajectory(tmp_path, "d-1", [10.0])

@@ -90,9 +90,11 @@ def evaluate(
     """Run an experiment over its benchmarks; results go to results/<experiment id>/."""
     from patchpilot.config import ExperimentConfig
     from patchpilot.evaluation.runner import run_experiment
+    from patchpilot.llm.client import check_context_window
 
     exp = ExperimentConfig.load(config)
     console.print(f"[bold]Experiment {exp.id}[/]: {exp.description}")
+    check_context_window(exp.llm)  # an Ollama model with too small a window cuts long prompts
 
     def report(row: dict[str, Any]) -> None:
         mark = "[green]resolved[/]" if row["resolved"] else "[red]not resolved[/]"
