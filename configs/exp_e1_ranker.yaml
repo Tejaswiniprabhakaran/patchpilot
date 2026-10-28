@@ -1,0 +1,23 @@
+# E1 — trained fault-localization ranker + base Gemma 4 E4B, 3 attempts. Answers RQ2 against B0.
+# Identical to B0 except the localizer (decisions D12; ranker trained per D16).
+id: E1
+description: Trained cross-encoder localization, base Gemma 4 E4B, 3 attempts
+localizer: ranker
+ranker_model: data/models/fl-cross-encoder
+llm:
+  base_url: http://localhost:11434/v1
+  model: gemma4:e4b
+  temperature: 0.0
+  seed: 42
+  max_tokens: 2048
+  context_tokens: 16384
+  reasoning_effort: none  # decisions.md D10
+agent:
+  max_attempts: 3
+  top_k_files: 3
+benchmarks:
+  - name: quixbugs
+    instances: all
+  - name: swebench-lite
+    instances: subset10
+seed: 42

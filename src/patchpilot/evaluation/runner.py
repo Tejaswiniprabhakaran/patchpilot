@@ -50,7 +50,16 @@ def load_benchmark(selection: BenchmarkSelection) -> list[BenchmarkInstance]:
 def make_localizer(config: ExperimentConfig, llm: LLMClient) -> Localizer:
     if config.localizer == "llm_search":
         return LLMSearchLocalizer(llm, top_k=config.agent.top_k_files)
-    raise NotImplementedError(f"localizer {config.localizer!r} arrives in Phase 3")
+    if config.localizer == "ranker":
+        if not config.ranker_model:
+            raise ValueError("localizer 'ranker' needs ranker_model in the experiment config")
+        from patchpilot.localization.cross_encoder import CrossEncoderRanker
+        from patchpilot.localization.localizer import RankerLocalizer
+
+        return RankerLocalizer(
+            CrossEncoderRanker(config.ranker_model), top_k=config.agent.top_k_files
+        )
+    raise ValueError(f"unknown localizer {config.localizer!r}")
 
 
 def make_agent(config: ExperimentConfig) -> Agent:
