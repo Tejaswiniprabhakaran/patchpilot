@@ -172,9 +172,9 @@ def gen_abstract() -> str:
     else:
         sentences.append(f"Fault-localization accuracy of the trained ranker: {TODO}.")
     sentences.append(
-        "The QLoRA patch-generator pipeline (training data, notebook and model card) is complete "
-        "but was not trained, because it needs a GPU, so the effect of fine-tuning (RQ3) remains "
-        "open."
+        "Fine-tuning the patch generator was dropped (decision D18): the base model already "
+        "fixes bugs and no GPU was available; its training data and notebook remain in the "
+        "repository."
     )
     return "**Results.** " + " ".join(sentences)
 
@@ -473,10 +473,7 @@ def gen_answers() -> str:
     ]
     lines.append(
         "- **RQ1 (how many real bugs can an open-weight agent fix?)** With base Gemma 4 E4B on a "
-        "laptop CPU: "
-        + ("; ".join(fixed) if fixed else TODO)
-        + ". The planned comparison of the full system (E3, with the fine-tuned patch generator) "
-        "against the baseline is not available, because the fine-tuned model was not trained."
+        "laptop CPU: " + ("; ".join(fixed) if fixed else TODO) + "."
     )
     lines.append("- **RQ2 (does the trained ranker help?)** " + " ".join(compare("B0", "E1", "E1")))
     size, sample = heldout_sample()
@@ -487,8 +484,8 @@ def gen_answers() -> str:
             f"{pct(sample['bm25']['function_level']['top1'])} for BM25 (Section 7.3)."
         )
     lines.append(
-        "- **RQ3 (does fine-tuning help?)** Not answered: E2-E4 need the fine-tuned model "
-        "(notebook 02 and its dataset are ready)."
+        "- **RQ3 (does fine-tuning help?)** Not studied: fine-tuning was dropped (D18), because "
+        "the base model already fixes bugs and no GPU was available."
     )
     rq4 = compare("B0@1", "B0", "retries") + compare("E1@1", "E1", "retries")
     lines.append("- **RQ4 (do retries with test feedback help?)** " + " ".join(rq4))

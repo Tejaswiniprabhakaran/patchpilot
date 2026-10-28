@@ -33,9 +33,10 @@ Get-Content C:\dev\patchpilot\logs\pipeline.log -Tail 20
 **After the pipeline finishes**: commit `results/` and the rebuilt report from `C:\dev\patchpilot`
 (a results branch and pull request), check the numbers, tag a release.
 
-**Still needs the owner**: notebook 02 on a GPU for the fine-tuned model (E2–E4); 30 blind manual
-labels (`scripts/label_failures.py`) for the classifier agreement; optional Hub upload of the
-CPU-trained ranker.
+**Dropped by the owner (D18)**: fine-tuning the patch generator (E2–E4). **Optional**: 30 blind
+manual labels (`scripts/label_failures.py`) for the classifier agreement; Hub upload of the
+CPU-trained ranker. The results are committed and pushed automatically when the pipeline ends
+(`scripts/finish_when_done.ps1`, log in `logs/finish.log`).
 
 ## 2026-10-28 — All software built; experiments and training still pending
 

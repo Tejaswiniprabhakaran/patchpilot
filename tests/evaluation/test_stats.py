@@ -100,7 +100,7 @@ def test_build_tables_reports_todo_and_tests_only_complete_pairs(tmp_path: Path)
     rates = {(r["config"], r["benchmark"]): r for r in tables["resolve_rates"]}
     assert rates[("B0", "quixbugs")]["resolved"] == 10
     assert rates[("E1", "quixbugs")]["resolved"] == 16
-    assert rates[("E2", "quixbugs")]["status"] == "TODO: not yet run"
+    assert ("E2", "quixbugs") not in rates  # fine-tuning was dropped (D18)
     rq2 = next(
         t
         for t in tables["paired_tests"]
@@ -109,8 +109,8 @@ def test_build_tables_reports_todo_and_tests_only_complete_pairs(tmp_path: Path)
     assert rq2["status"] == "done"
     assert (rq2["a_only"], rq2["b_only"]) == (0, 6)
     assert rq2["mcnemar_exact_p"] == pytest.approx(0.0312, abs=1e-4)
-    rq3 = next(t for t in tables["paired_tests"] if t["b"] == "E2")
-    assert rq3["status"].startswith("TODO")
+    swe = next(t for t in tables["paired_tests"] if t["benchmark"] == "swebench-lite")
+    assert swe["status"].startswith("TODO")
     text = markdown(tables)
     assert "TODO: not yet run" in text
     assert "`" + str(tmp_path / "B0" / "quixbugs.jsonl").replace("\\", "/") + "`" in text
@@ -135,19 +135,19 @@ def test_derived_configs_cap_attempts(tmp_path: Path) -> None:
         }
         for i in range(40)
     ]
-    write_rows(tmp_path, "E3", "quixbugs", rows)
+    write_rows(tmp_path, "E1", "quixbugs", rows)
 
     tables = build_tables(tmp_path, sanity)
 
     rates = {(r["config"], r["benchmark"]): r for r in tables["resolve_rates"]}
-    assert rates[("E3", "quixbugs")]["resolved"] == 4
-    assert rates[("E4", "quixbugs")]["resolved"] == 2
+    assert rates[("E1", "quixbugs")]["resolved"] == 4
+    assert rates[("E1@1", "quixbugs")]["resolved"] == 2
     curve = {
         c["attempts"]: c["resolved"]
         for c in tables["retries_curve"]
-        if c["benchmark"] == "quixbugs" and c["config"] == "E3"
+        if c["benchmark"] == "quixbugs" and c["config"] == "E1"
     }
-    assert curve == {1: 2, 2: 2, 3: 4, 5: 4}
+    assert curve == {1: 2, 2: 2, 3: 4}
 
 
 def test_retries_are_measured_on_the_base_model_runs(tmp_path: Path) -> None:

@@ -36,24 +36,15 @@ CONFIGS = [
     Config("B0", "B0@1", "B0 counted at its first attempt (no retries)", attempts=1),
     Config("E1", "E1", "trained ranker, base Gemma 4 E4B, 3 attempts"),
     Config("E1", "E1@1", "E1 counted at its first attempt (no retries)", attempts=1),
-    Config("E2", "E2", "LLM-search localization, fine-tuned Gemma 4 E4B, 3 attempts"),
-    Config("E3", "E3", "trained ranker, fine-tuned Gemma 4 E4B, 3 attempts", attempts=3),
-    Config("E3", "E4", "trained ranker, fine-tuned Gemma 4 E4B, 1 attempt", attempts=1),
-    Config("G1", "G1", "trained ranker, Gemini API reference (optional)"),
 ]
+# E2-E4 (fine-tuned patch generator) and G1 (Gemini reference) were dropped (decisions D18).
 COMPARISONS = [  # (a, b, research question)
     ("B0", "E1", "RQ2: trained ranker vs LLM search (base model)"),
-    ("B0", "E2", "RQ3: fine-tuned vs base model (LLM search)"),
-    ("E1", "E3", "RQ3: fine-tuned vs base model (trained ranker)"),
-    ("B0", "E3", "RQ1: full system vs baseline"),
     ("B0@1", "B0", "RQ4: retries with feedback (3 attempts) vs 1 attempt (B0)"),
     ("E1@1", "E1", "RQ4: retries with feedback (3 attempts) vs 1 attempt (E1)"),
-    ("E4", "E3", "RQ4: retries with feedback (3 attempts) vs 1 attempt (E3)"),
 ]
-RETRY_CURVE_K = (1, 2, 3, 5)
-# Runs whose "resolved within k attempts" curve is reported, and the k values shown. B0 and E1
-# stop at 3 attempts; E3 was planned with longer runs (E5).
-CURVE_K = {"B0": (1, 2, 3), "E1": (1, 2, 3), "E3": RETRY_CURVE_K}
+# Runs whose "resolved within k attempts" curve is reported, and the k values shown.
+CURVE_K = {"B0": (1, 2, 3), "E1": (1, 2, 3)}
 
 
 def outcome(config: Config, results: ExperimentResults) -> dict[str, bool]:

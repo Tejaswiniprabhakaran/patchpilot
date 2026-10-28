@@ -1,7 +1,7 @@
 # Model card: PatchPilot patch generator (Gemma 4 E4B + QLoRA)
 
 **Hub:** adapter `Tejaswiniprabhakaran19/patchpilot-gemma4-e4b-lora`, GGUF
-`Tejaswiniprabhakaran19/patchpilot-gemma4-e4b-gguf` (TODO: not yet trained) ·
+`Tejaswiniprabhakaran19/patchpilot-gemma4-e4b-gguf` (not trained: dropped, decisions D18) ·
 **Notebook:** `notebooks/02_patch_generator_lora.ipynb`
 
 ## Model
@@ -26,14 +26,13 @@ SEARCH/REPLACE edit blocks. It is not a general chat model and was not evaluated
 - 1 epoch, learning rate 2e-4 (cosine, 3% warm-up), effective batch 16, max length 3,072 tokens,
   gradient checkpointing, paged 8-bit AdamW, loss on the assistant answer only, seed 42, free
   Kaggle T4 (fp16).
-- Peak GPU memory and loss curves: TODO (logged by the notebook into `training_log.json` and
-  `loss_curve.png`).
+- Peak GPU memory and loss curves: not available (training dropped, D18).
 
 ## Evaluation
 
 Experiments E2 (LLM-search localization) and E3/E4 (trained ranker; 3 and 1 attempts) against B0/E1
 with the base model, on QuixBugs (40) and 10 SWE-bench Lite instances, compared with exact McNemar
-tests: TODO: not yet run. Results will appear in `results/summary/`.
+tests: not run, because the training was dropped (decisions D18).
 
 ## Limitations and risks
 
