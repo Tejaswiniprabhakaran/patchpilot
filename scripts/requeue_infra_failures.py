@@ -3,7 +3,9 @@
 A row is an infrastructure failure if, regardless of whether the bug was fixed:
   * its run ended with a model-server error (timeout, connection error), or
   * any single model call took longer than 1800 s, which on this laptop means the machine
-    slept or the model server stalled.
+    slept or the model server stalled, or
+  * with --context-window N: a model call filled the N-token window the server really used, so
+    the server, not the agent, cut the answer short (decisions D17).
 
 Such rows are moved from results/<exp>/<benchmark>.jsonl to results/<exp>/infra_failures.jsonl
 (their trajectories stay where they are), so `patchpilot eval` runs those instances again.
@@ -12,6 +14,7 @@ and is reported as an environment error. Run it only when no experiment is writi
 
 Usage:
     python scripts/requeue_infra_failures.py results/B0/quixbugs.jsonl [--dry-run]
+    python scripts/requeue_infra_failures.py results/B0/quixbugs.jsonl --context-window 4096
 """
 
 from __future__ import annotations
@@ -27,6 +30,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("results_file", type=Path)
     parser.add_argument("--stall-s", type=float, default=STALL_S)
+    parser.add_argument("--context-window", type=int, help="window the server used, in tokens")
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
 
@@ -37,7 +41,9 @@ def main() -> None:
         already = {json.loads(line)["instance_id"] for line in log.read_text().splitlines()}
     rows = [json.loads(line) for line in args.results_file.read_text().splitlines() if line]
 
-    keep, requeue = split_rows(rows, exp_dir / "trajectories", already, args.stall_s)
+    keep, requeue = split_rows(
+        rows, exp_dir / "trajectories", already, args.stall_s, args.context_window
+    )
     for row in requeue:
         print(f"re-queue {row['instance_id']}: {row['requeue_reason']}")
     if args.dry_run or not requeue:

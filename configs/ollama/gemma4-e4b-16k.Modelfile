@@ -1,0 +1,9 @@
+# Gemma 4 E4B (the same weights and quantization as `gemma4:e4b`) with a 16,384-token context
+# window. Ollama's OpenAI-compatible API ignores a per-request num_ctx and otherwise runs every
+# model with 4,096 tokens, which cuts long SWE-bench prompts (decisions D17). Create it once:
+#
+#   ollama create gemma4-e4b-16k -f configs/ollama/gemma4-e4b-16k.Modelfile
+#
+# It shares the base model's weight files, so it takes no extra disk space.
+FROM gemma4:e4b
+PARAMETER num_ctx 16384
