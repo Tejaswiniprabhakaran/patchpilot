@@ -1,0 +1,76 @@
+name: PatchPilot
+description: >
+  When the tests of a pull request fail, PatchPilot locates the bug, proposes a fix with an open LLM,
+  verifies it in a network-isolated Docker sandbox and posts the diff as a PR comment.
+  It never pushes commits and never merges.
+author: Tejaswini Prabhakaran
+branding:
+  icon: tool
+  color: blue
+
+inputs:
+  test-command:
+    description: Command that runs the tests inside the sandbox (pytest, with -rA for per-test results)
+    default: python -m pytest -rA -q -p no:cacheprovider
+  model:
+    description: Model name. With the built-in Ollama this is an Ollama tag.
+    default: gemma4:e4b
+  llm-base-url:
+    description: OpenAI-compatible endpoint. Leave empty to run Ollama on the runner.
+    default: ""
+  max-attempts:
+    description: Repair attempts (each one is tested before the next)
+    default: "2"
+  protected-paths:
+    description: Comma-separated paths the agent may not edit
+    default: tests/
+  github-token:
+    description: Token used to post the comment (needs pull-requests write)
+    default: ${{ github.token }}
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-python@v5
+      with:
+        python-version: "3.11"
+
+    - name: Install PatchPilot
+      shell: bash
+      run: python -m pip install --quiet "${{ github.action_path }}/.."
+
+    - name: Cache Ollama models
+      if: inputs.llm-base-url == ''
+      uses: actions/cache@v4
+      with:
+        path: ~/.ollama/models
+        key: ollama-${{ inputs.model }}
+
+    - name: Start Ollama
+      if: inputs.llm-base-url == ''
+      shell: bash
+      run: |
+        curl -fsSL https://ollama.com/install.sh | sh
+        (ollama serve > /tmp/ollama.log 2>&1 &)
+        for i in $(seq 1 60); do curl -sf http://localhost:11434/api/tags > /dev/null && break; sleep 2; done
+        ollama pull "${{ inputs.model }}"
+
+    - name: Run PatchPilot
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+        PATCHPILOT_LLM_MODEL: ${{ inputs.model }}
+        PATCHPILOT_LLM_BASE_URL: ${{ inputs.llm-base-url != '' && inputs.llm-base-url || 'http://localhost:11434/v1' }}
+      run: >
+        python -m patchpilot.bot
+        --test-command "${{ inputs.test-command }}"
+        --max-attempts "${{ inputs.max-attempts }}"
+        --protected "${{ inputs.protected-paths }}"
+
+    - name: Keep the trajectory
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: patchpilot-trajectory
+        path: runs/
+        if-no-files-found: ignore
