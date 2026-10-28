@@ -7,6 +7,8 @@ All notable changes to this project are documented here. The format follows
 ## [Unreleased]
 
 ### Changed
+- To finish in about 10 hours (D19): the ranker trains for 2 h, the held-out evaluation uses
+  100 instances, E1 runs on the SWE-bench subset only, and the failure taxonomy is rules-only.
 - Fine-tuning the patch generator (E2–E4) and the Gemini reference (G1) are dropped (D18);
   the tables and the report cover B0 and E1. `scripts/finish_when_done.ps1` commits and pushes
   the results when the pipeline ends.

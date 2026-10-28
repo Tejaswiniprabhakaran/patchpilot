@@ -75,7 +75,8 @@ Python programs only; evaluation on QuixBugs (40 programs) and a seeded 10-insta
 SWE-bench Lite drawn from 49 sanity-checked instances. All inference and the ranker's training run
 on a laptop CPU (decisions D12 and D16 in `docs/decisions.md`). Fine-tuning the patch generator
 (objective 4) was dropped (decision D18): the base model already fixes bugs and no GPU was
-available; its training data and notebook stay in the repository.
+available; its training data and notebook stay in the repository. To finish sooner, E1 runs
+on the SWE-bench subset only and the ranker trains for 2 hours (decision D19).
 
 ## 1.6 Research questions
 
@@ -339,7 +340,7 @@ conda, spaCy, meson). Dataset cards: `docs/dataset_cards/`.
 | Method | full fine-tuning, 2-class cross-encoder | QLoRA (4-bit NF4, LoRA r=16, α=32, dropout 0.05) |
 | Data | seeded sample of 2,000 training instances; all positives, 4 hard-negative files, 8 negative functions each | 3,063 chats |
 | Length | 256 tokens (bug report: 128) | 3,072 tokens |
-| Optimisation | lr 3e-5, batch 16, at most 1 epoch within a 4-hour budget, fp32 | lr 2e-4 cosine, batch 16, 1 epoch, paged 8-bit AdamW |
+| Optimisation | lr 3e-5, batch 16, at most 1 epoch within a 2-hour budget (D19), fp32 | lr 2e-4 cosine, batch 16, 1 epoch, paged 8-bit AdamW |
 | Hardware | laptop CPU (D16) | Kaggle T4 (notebook 02; not run) |
 
 The full-scale GPU recipe for the ranker (all 113,396 pairs, 384 tokens) stays in notebook 01; the

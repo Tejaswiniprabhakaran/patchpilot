@@ -29,6 +29,7 @@ from typing import Any
 import yaml
 
 from patchpilot.evaluation.stats import paired_compare
+from patchpilot.evaluation.summary import NOT_RUN
 
 REPORT = Path("report/report.md")
 DOCX = Path("report/PatchPilot_report.docx")
@@ -339,7 +340,7 @@ def gen_resolve() -> str:
             cells = [f"{t['a_resolved']}/{t['n']}", f"{t['b_resolved']}/{t['n']}", t["a_only"]]
             cells += [t["b_only"], t["mcnemar_exact_p"]]
         else:
-            cells = ["-", "-", "-", "-", "TODO"]
+            cells = ["-", "-", "-", "-", "TODO" if t["status"].startswith("TODO") else t["status"]]
         test_rows.append([t["question"], BENCH[t["benchmark"]], f"{t['a']} vs {t['b']}", *cells])
     parts.append(
         "**Paired comparisons** (exact McNemar test on the instances both runs attempted; TODO: "
@@ -454,7 +455,10 @@ def gen_answers() -> str:
         for benchmark in BENCH:
             t = done_test(a, b, benchmark)
             if t is None:
-                out.append(f"{BENCH[benchmark]}: {TODO} (needs complete {a} and {b} runs).")
+                if (a, benchmark) in NOT_RUN or (b, benchmark) in NOT_RUN:
+                    out.append(f"{BENCH[benchmark]}: not run, by design (D19).")
+                else:
+                    out.append(f"{BENCH[benchmark]}: {TODO} (needs complete {a} and {b} runs).")
                 continue
             verdict = "is" if t["significant_at_0.05"] == "True" else "is not"
             out.append(

@@ -27,8 +27,9 @@ Get-Content C:\dev\patchpilot\logs\pipeline.log -Tail 20
 - Report builder and screenshots; the report is now a technical report (no university front
   matter, since PatchPilot is a resume project).
 
-**Expected run time** (laptop CPU, measured speeds): B0 QuixBugs about 3 h more, B0 SWE-bench
-5–10 h, training 4 h, localization evaluation about 3 h, E1 10–15 h.
+**Expected run time** after the D19 cuts: about 10 hours from 21:45 on 2026-10-28 (rest of B0
+SWE-bench, 2 h ranker training, localization on 100 held-out instances, E1 on 10 SWE-bench
+instances, summaries and report).
 
 **After the pipeline finishes**: commit `results/` and the rebuilt report from `C:\dev\patchpilot`
 (a results branch and pull request), check the numbers, tag a release.

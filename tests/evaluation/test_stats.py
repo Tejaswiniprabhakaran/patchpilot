@@ -177,3 +177,20 @@ def test_retries_are_measured_on_the_base_model_runs(tmp_path: Path) -> None:
     curve = [(c["attempts"], c["resolved"]) for c in tables["retries_curve"] if c["config"] == "B0"]
     assert curve == [(1, 6), (2, 10), (3, 10)]
     assert "| B0 | quixbugs | 2 | 10/40 | 25.0% |" in markdown(tables)
+
+
+def test_runs_left_out_by_design_are_not_todo(tmp_path: Path) -> None:
+    sanity = tmp_path / "sanity.jsonl"
+    sanity.write_text("")
+
+    tables = build_tables(tmp_path, sanity)
+
+    rates = {(r["config"], r["benchmark"]): r for r in tables["resolve_rates"]}
+    assert rates[("E1", "quixbugs")]["status"] == "not run (D19)"
+    assert rates[("E1", "swebench-lite")]["status"] == "TODO: not yet run"
+    rq2 = next(
+        t
+        for t in tables["paired_tests"]
+        if (t["a"], t["b"], t["benchmark"]) == ("B0", "E1", "quixbugs")
+    )
+    assert rq2["status"] == "not run (D19)"

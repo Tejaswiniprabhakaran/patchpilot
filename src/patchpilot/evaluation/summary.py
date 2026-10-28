@@ -45,6 +45,10 @@ COMPARISONS = [  # (a, b, research question)
 ]
 # Runs whose "resolved within k attempts" curve is reported, and the k values shown.
 CURVE_K = {"B0": (1, 2, 3), "E1": (1, 2, 3)}
+# Left out on purpose to finish sooner (decisions D19): QuixBugs programs are one small file,
+# so the trained ranker has little to rank there.
+NOT_RUN = {("E1", "quixbugs"), ("E1@1", "quixbugs")}
+NOT_RUN_STATUS = "not run (D19)"
 
 
 def outcome(config: Config, results: ExperimentResults) -> dict[str, bool]:
@@ -69,7 +73,8 @@ def build_tables(
             res = loader(config.experiment, benchmark, results_dir, sanity_file)
             key = (config.label, benchmark)
             if not res.rows:
-                rates.append(_rate_row(config, benchmark, res, None, "TODO: not yet run"))
+                missing = NOT_RUN_STATUS if key in NOT_RUN else "TODO: not yet run"
+                rates.append(_rate_row(config, benchmark, res, None, missing))
                 continue
             resolved = outcome(config, res)
             outcomes[key] = resolved
@@ -135,7 +140,11 @@ def build_tables(
                         "question": question,
                         "a": a,
                         "b": b,
-                        "status": "TODO: needs both experiments complete",
+                        "status": (
+                            NOT_RUN_STATUS
+                            if ka in NOT_RUN or kb in NOT_RUN
+                            else "TODO: needs both experiments complete"
+                        ),
                     }
                 )
                 continue

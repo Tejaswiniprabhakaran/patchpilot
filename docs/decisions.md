@@ -276,3 +276,17 @@ B0 and E1 instead of E3; RQ1 is answered by the base-model runs.
 
 **Why:** a working system evaluated honestly on the hardware available is better than a plan that
 cannot run, and the result tables no longer carry permanent TODO rows.
+
+## D19 — Shorter final runs, to finish in about 10 hours (2026-10-28)
+
+**Context:** with B0 half-way through SWE-bench, the remaining plan needed about 20 more hours of
+laptop CPU time, and the owner asked to finish sooner.
+
+**Decision (owner):** the ranker trains for 2 hours instead of 4 (D16); the held-out localization
+evaluation uses a seeded sample of 100 instead of 200 instances; E1 runs on the 10 SWE-bench
+instances only (QuixBugs programs are one small file, so the trained ranker has little to rank and
+B0's QuixBugs results stand alone); the failure taxonomy uses the rule classifier without the LLM
+judge. The tables show the left-out runs as "not run (D19)", not as TODO.
+
+**Why:** this saves about 10 hours and keeps the comparisons that matter for the ranker: the
+held-out localization metrics and B0 against E1 on real repositories.

@@ -1,6 +1,6 @@
 # Run every remaining experiment step one after another, unattended (resource rules, D14):
 #   B0 QuixBugs -> B0 SWE-bench -> ranker training (D16) -> localization evaluation
-#   -> E1 QuixBugs -> E1 SWE-bench -> summaries, figures, failure taxonomy (LLM judge).
+#   -> E1 SWE-bench -> summaries, figures, failure taxonomy (shortened in D19).
 # One heavy job at a time, at Below Normal priority. A step whose output already exists is
 # skipped, and `patchpilot eval` resumes from saved rows, so the pipeline can be stopped with
 # scripts/pause_patchpilot.ps1 and started again at any time. It first waits for an evaluation
@@ -112,7 +112,7 @@ Invoke-Eval "B0" "configs/exp_baseline.yaml" "quixbugs"
 Invoke-Eval "B0" "configs/exp_baseline.yaml" "swebench-lite"
 
 if (-not (Test-Path "$ranker/patchpilot.json")) {
-    Invoke-Step "train the ranker (A1, D16)" $py "scripts/train_ranker_cpu.py --budget-hours 4" $false
+    Invoke-Step "train the ranker (A1, D16, D19)" $py "scripts/train_ranker_cpu.py --budget-hours 2" $false
     # The base model was a temporary download; the trained model folder is self-contained.
     $base = Join-Path $env:USERPROFILE ".cache\huggingface\hub\models--microsoft--unixcoder-base"
     if ((Test-Path $base) -and -not $DryRun) {
@@ -120,21 +120,20 @@ if (-not (Test-Path "$ranker/patchpilot.json")) {
         Write-Log "deleted the temporary base-model download $base"
     }
 }
-if (-not (Test-Path "results/localization/heldout_cross_encoder_test_sample200.json")) {
+if (-not (Test-Path "results/localization/heldout_cross_encoder_test_sample100.json")) {
     Invoke-Step "localization, held-out sample" $py ("scripts/eval_localization.py --setting heldout " +
-        "--sample 200 --methods bm25 embedding cross_encoder --model $ranker") $false
+        "--sample 100 --methods bm25 embedding cross_encoder --model $ranker") $false
 }
 if (-not (Test-Path "results/localization/swebench_cross_encoder.json")) {
     Invoke-Step "localization, SWE-bench subset" $py ("scripts/eval_localization.py --setting swebench " +
         "--methods bm25 embedding cross_encoder --model $ranker") $true
 }
 
-Invoke-Eval "E1" "configs/exp_e1_ranker.yaml" "quixbugs"
 Invoke-Eval "E1" "configs/exp_e1_ranker.yaml" "swebench-lite"
 
 Invoke-Step "result summaries" $py "scripts/summarize_results.py" $false
 Invoke-Step "figures" $py "scripts/make_figures.py" $false
-Invoke-Step "failure taxonomy with the LLM judge" $py "scripts/classify_failures.py --judge" $false
+Invoke-Step "failure taxonomy (rules, D19)" $py "scripts/classify_failures.py" $false
 if (Test-Path "scripts/build_report.py") {
     Invoke-Step "report (DOCX and PDF)" $py "scripts/build_report.py" $false
 }

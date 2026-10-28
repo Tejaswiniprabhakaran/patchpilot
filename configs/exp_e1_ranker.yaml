@@ -15,9 +15,7 @@ llm:
 agent:
   max_attempts: 3
   top_k_files: 3
-benchmarks:
-  - name: quixbugs
-    instances: all
+benchmarks:  # SWE-bench subset only: QuixBugs programs are one small file (D19)
   - name: swebench-lite
     instances: subset10
 seed: 42
