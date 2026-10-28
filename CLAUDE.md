@@ -63,6 +63,13 @@ evaluated on SWE-bench Lite (50-instance seeded subset) and QuixBugs.
 - Docker Desktop's disk lives on `D:\DockerData`; SWE-bench images are kept, not pruned.
 - Commit gate: ruff check, ruff format, mypy, then **plain `pytest`** (as CI runs it).
 
+## Commit helper (use it)
+
+`source scripts/dev/gate.sh` then `gate` (format, lint, mypy, plain pytest as CI) and
+`commit "message" paths...` (commits only if the gate passes, then pushes). `pushgh` pushes as the
+gh account `Tejaswiniprabhakaran`: the Windows credential manager also holds another GitHub
+account, and a plain `git push` fails with 403. Never change global git settings for this.
+
 ## Commands
 
 ```bash
