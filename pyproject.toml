@@ -20,6 +20,12 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+dashboard = [
+    "fastapi>=0.115",
+    "uvicorn>=0.30",
+    "jinja2>=3.1",
+    "httpx>=0.27",
+]
 bench = [
     "swebench==4.1.0",
     "datasets>=2.20",
@@ -32,6 +38,10 @@ dev = [
     "pre-commit>=3.7",
     "types-PyYAML>=6.0",
     "matplotlib>=3.8",
+    "fastapi>=0.115",
+    "uvicorn>=0.30",
+    "jinja2>=3.1",
+    "httpx>=0.27",
 ]
 
 [project.scripts]
@@ -59,7 +69,7 @@ files = ["src/patchpilot"]
 warn_unused_ignores = true
 
 [[tool.mypy.overrides]]
-module = ["docker.*", "datasets.*", "swebench.*", "rank_bm25.*", "sentence_transformers.*", "faiss.*", "transformers.*", "torch.*"]
+module = ["docker.*", "datasets.*", "swebench.*", "rank_bm25.*", "sentence_transformers.*", "faiss.*", "transformers.*", "torch.*", "pygments.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]

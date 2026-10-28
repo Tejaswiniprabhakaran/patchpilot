@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Runs{% endblock %}
+{% block content %}
+<h1>Runs</h1>
+<form class="filters" method="get" action="/">
+  <label>Experiment
+    <select name="experiment">
+      <option value="">All</option>
+      {% for e in experiments %}<option value="{{ e }}" {% if f.experiment == e %}selected{% endif %}>{{ e }}</option>{% endfor %}
+    </select>
+  </label>
+  <label>Benchmark
+    <select name="benchmark">
+      <option value="">All</option>
+      {% for b in ["quixbugs", "swebench-lite"] %}<option value="{{ b }}" {% if f.benchmark == b %}selected{% endif %}>{{ b }}</option>{% endfor %}
+    </select>
+  </label>
+  <label>Status
+    <select name="status">
+      <option value="">All</option>
+      <option value="resolved" {% if f.status == "resolved" %}selected{% endif %}>Resolved</option>
+      <option value="unresolved" {% if f.status == "unresolved" %}selected{% endif %}>Not resolved</option>
+    </select>
+  </label>
+  <button type="submit">Apply</button>
+</form>
+<p class="muted">Showing {{ runs|length }} of {{ total }} runs.</p>
+{% if runs %}
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Experiment</th><th>Benchmark</th><th>Instance</th><th>Result</th><th class="num">Attempts</th><th class="num">Time (s)</th><th class="num">LLM calls</th><th class="num">Tokens</th></tr></thead>
+  <tbody>
+  {% for r in runs %}
+    <tr>
+      <td>{{ r.experiment }}</td>
+      <td>{{ r.benchmark }}</td>
+      <td><a href="/runs/{{ r.experiment }}/{{ r.run_id }}">{{ r.instance_id }}</a></td>
+      <td>{% if r.error %}<span class="status bad">⚠ error</span>{% elif r.resolved %}<span class="status good">✓ resolved</span>{% else %}<span class="status bad">✗ not resolved</span>{% endif %}</td>
+      <td class="num">{{ r.attempts_used }}</td>
+      <td class="num">{{ "%.0f"|format(r.wall_s) if r.wall_s is not none else "-" }}</td>
+      <td class="num">{{ r.llm_calls }}</td>
+      <td class="num">{{ "{:,}".format(r.tokens) }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% else %}
+<p>No runs match these filters yet.</p>
+{% endif %}
+{% endblock %}
