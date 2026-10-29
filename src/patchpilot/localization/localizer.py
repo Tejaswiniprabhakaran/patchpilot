@@ -28,7 +28,8 @@ MAX_FILE_BYTES = 300_000
 # oldest Python in a SWE-bench image (3.6 in the Django ones), so no capture_output or f-strings.
 _DUMP = r"""
 import json, subprocess, sys
-paths = subprocess.run(["git", "ls-files", "-z", "*.py"], stdout=subprocess.PIPE).stdout.split(b"\0")
+listing = subprocess.run(["git", "ls-files", "-z", "*.py"], stdout=subprocess.PIPE).stdout
+paths = listing.split(b"\0")
 out = {}
 for raw in paths:
     if not raw:
