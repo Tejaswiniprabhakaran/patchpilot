@@ -170,3 +170,28 @@ def test_pulled_image_keeps_images_that_were_already_present() -> None:
 
     client.images.pull.assert_not_called()
     client.images.remove.assert_not_called()
+
+
+def test_github_files_come_from_the_mirror_when_raw_github_is_blocked() -> None:
+    calls: list[str] = []
+
+    class FakeRequests:
+        exceptions = requests.exceptions
+
+        @staticmethod
+        def get(url: str, **kwargs: object) -> types.SimpleNamespace:
+            calls.append(url)
+            if url.startswith(swebench.RAW_GITHUB):
+                raise requests.exceptions.ConnectTimeout("blocked")
+            return types.SimpleNamespace(status_code=200, text="asgiref ~= 3.2")
+
+    proxy = swebench._RequestsWithMirror(FakeRequests)
+
+    reply = proxy.get(f"{swebench.RAW_GITHUB}django/django/abc123/tests/requirements/py3.txt")
+
+    assert reply.text == "asgiref ~= 3.2"
+    assert (
+        calls[-1] == "https://cdn.jsdelivr.net/gh/django/django@abc123/tests/requirements/py3.txt"
+    )
+    with pytest.raises(requests.exceptions.ConnectTimeout):
+        proxy.get(f"{swebench.RAW_GITHUB}x")  # not a file path: nothing to mirror

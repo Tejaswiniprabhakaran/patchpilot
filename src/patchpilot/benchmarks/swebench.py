@@ -55,6 +55,36 @@ _STATUS = {
 }
 
 
+RAW_GITHUB = "https://raw.githubusercontent.com/"
+GITHUB_MIRROR = "https://cdn.jsdelivr.net/gh/"
+DOWNLOAD_TIMEOUT_S = 15
+
+
+class _RequestsWithMirror:
+    """``requests`` as the harness sees it. Building a test spec downloads requirement files from
+    raw.githubusercontent.com, which some networks block; such a file then comes from the jsDelivr
+    mirror of the same commit. Only the spec's environment script uses it, and the prebuilt
+    instance images make that script unnecessary, so any copy of the same file will do."""
+
+    def __init__(self, requests_module: Any) -> None:
+        self._requests = requests_module
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self._requests, name)
+
+    def get(self, url: str, *args: Any, **kwargs: Any) -> Any:
+        kwargs.setdefault("timeout", DOWNLOAD_TIMEOUT_S)
+        try:
+            return self._requests.get(url, *args, **kwargs)
+        except self._requests.exceptions.RequestException:
+            parts = url[len(RAW_GITHUB) :].split("/", 3) if url.startswith(RAW_GITHUB) else []
+            if len(parts) != 4:  # not a GitHub file: nothing to mirror
+                raise
+            owner, repo, commit, path = parts
+            mirror = f"{GITHUB_MIRROR}{owner}/{repo}@{commit}/{path}"
+            return self._requests.get(mirror, *args, **kwargs)
+
+
 def _harness() -> types.SimpleNamespace:
     """Import the official harness.
 
@@ -66,8 +96,11 @@ def _harness() -> types.SimpleNamespace:
         sys.modules.setdefault("resource", types.ModuleType("resource"))
     from swebench.harness.constants import END_TEST_OUTPUT, START_TEST_OUTPUT
     from swebench.harness.log_parsers import MAP_REPO_TO_PARSER
+    from swebench.harness.test_spec import python as harness_python
     from swebench.harness.test_spec.test_spec import make_test_spec
 
+    if not isinstance(harness_python.requests, _RequestsWithMirror):
+        harness_python.requests = _RequestsWithMirror(harness_python.requests)
     return types.SimpleNamespace(
         make_test_spec=make_test_spec,
         parsers=MAP_REPO_TO_PARSER,
