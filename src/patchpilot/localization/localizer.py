@@ -24,10 +24,11 @@ from patchpilot.tools import Toolbox
 
 MAX_FILE_BYTES = 300_000
 
-# Runs inside the container: dump every tracked .py file as JSON {path: text}.
+# Runs inside the container: dump every tracked .py file as JSON {path: text}. It must run on the
+# oldest Python in a SWE-bench image (3.6 in the Django ones), so no capture_output or f-strings.
 _DUMP = r"""
 import json, subprocess, sys
-paths = subprocess.run(["git", "ls-files", "-z", "*.py"], capture_output=True).stdout.split(b"\0")
+paths = subprocess.run(["git", "ls-files", "-z", "*.py"], stdout=subprocess.PIPE).stdout.split(b"\0")
 out = {}
 for raw in paths:
     if not raw:

@@ -71,3 +71,11 @@ def test_bm25_satisfies_the_ranker_protocol() -> None:
     ranker = BM25Ranker(["a.py"], ["parse header"])
 
     assert ranker.rank("header")[0][0] == "a.py"
+
+
+def test_the_file_dump_runs_on_python_3_6() -> None:
+    # The Django SWE-bench images run Python 3.6: no capture_output (3.7) and no f-strings.
+    from patchpilot.localization.localizer import _DUMP
+
+    assert "capture_output" not in _DUMP
+    assert 'f"' not in _DUMP and "f'" not in _DUMP
