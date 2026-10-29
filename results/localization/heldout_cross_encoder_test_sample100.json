@@ -1,0 +1,25 @@
+{
+  "setting": "heldout",
+  "split": "test",
+  "sample": {
+    "size": 100,
+    "seed": 42
+  },
+  "instances": 100,
+  "method": "cross_encoder",
+  "model": "data/models/fl-cross-encoder",
+  "file_level": {
+    "top1": 0.37,
+    "top3": 0.9,
+    "top5": 0.96,
+    "mrr": 0.6109,
+    "n": 100
+  },
+  "function_level": {
+    "top1": 0.0674,
+    "top3": 0.1685,
+    "top5": 0.2472,
+    "mrr": 0.1709,
+    "n": 89
+  }
+}

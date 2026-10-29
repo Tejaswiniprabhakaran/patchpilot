@@ -1,0 +1,25 @@
+{
+  "setting": "heldout",
+  "split": "test",
+  "sample": {
+    "size": 100,
+    "seed": 42
+  },
+  "instances": 100,
+  "method": "bm25",
+  "model": null,
+  "file_level": {
+    "top1": 0.51,
+    "top3": 0.9,
+    "top5": 0.99,
+    "mrr": 0.7003,
+    "n": 100
+  },
+  "function_level": {
+    "top1": 0.2697,
+    "top3": 0.4157,
+    "top5": 0.4719,
+    "mrr": 0.3779,
+    "n": 89
+  }
+}

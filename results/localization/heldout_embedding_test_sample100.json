@@ -1,0 +1,25 @@
+{
+  "setting": "heldout",
+  "split": "test",
+  "sample": {
+    "size": 100,
+    "seed": 42
+  },
+  "instances": 100,
+  "method": "embedding",
+  "model": null,
+  "file_level": {
+    "top1": 0.51,
+    "top3": 0.89,
+    "top5": 0.94,
+    "mrr": 0.6974,
+    "n": 100
+  },
+  "function_level": {
+    "top1": 0.2697,
+    "top3": 0.3596,
+    "top5": 0.4719,
+    "mrr": 0.3634,
+    "n": 89
+  }
+}
